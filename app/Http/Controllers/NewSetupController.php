@@ -20,6 +20,7 @@ class NewSetupController extends Controller
         return view('setup.new', [
             'configured' => $service->isConfigured(),
             'provider' => $service->provider(),
+            'configurationHint' => $service->configurationHint(),
             'baseDomain' => (string) config('new_setup.base_domain'),
             'result' => session('new_setup_result'),
         ]);
@@ -64,5 +65,31 @@ class NewSetupController extends Controller
             ->route('setup.new')
             ->with('new_setup_result', $result)
             ->with('success', 'New project created successfully.');
+    }
+
+    public function storeHostingerToken(Request $request, NewClientSetupService $service)
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(AppRoles::Software)) {
+            abort(403);
+        }
+
+        if ($service->provider() !== 'hostinger') {
+            return back()->withErrors(['token' => 'Hostinger is not the active New Setup provider.']);
+        }
+
+        $validated = $request->validate([
+            'hostinger_api_token' => ['required', 'string', 'min:20', 'max:500'],
+        ]);
+
+        try {
+            $service->saveHostingerApiToken(trim($validated['hostinger_api_token']));
+        } catch (Throwable $e) {
+            return back()->withErrors(['token' => $e->getMessage()]);
+        }
+
+        return redirect()
+            ->route('setup.new')
+            ->with('success', 'Hostinger API token saved. New Setup is ready.');
     }
 }

@@ -30,18 +30,29 @@
 @if(!$configured)
     <div class="alert alert-warning">
         New Setup is not fully configured yet.
-        @if(($provider ?? 'hostinger') === 'hostinger')
-            Set Hostinger SSH key path and either
-            <code>NEW_SETUP_HOSTINGER_API_TOKEN</code> (or <code>.secrets/hostinger-api.token</code>)
-            or keep the Cursor Hostinger MCP bridge running. See <code>.secrets/hostinger-ssh.env</code>.
-        @else
-            Software must set <code>NEW_SETUP_PLESK_USER</code> and <code>NEW_SETUP_PLESK_PASSWORD</code> in <code>.env</code>.
-        @endif
+        {{ $configurationHint ?? 'Ask Software to finish Hostinger New Setup configuration.' }}
     </div>
+    @if(($provider ?? 'hostinger') === 'hostinger')
+        <form method="POST" action="{{ route('setup.new.hostinger-token') }}" class="border rounded p-3 mb-4 bg-white">
+            @csrf
+            <label class="form-label" for="hostinger_api_token">Hostinger API token</label>
+            <div class="input-group">
+                <input id="hostinger_api_token" type="password" name="hostinger_api_token" class="form-control"
+                       required minlength="20" maxlength="500" autocomplete="off"
+                       placeholder="Paste token from hPanel → API">
+                <button type="submit" class="btn btn-outline-primary">Save token</button>
+            </div>
+            <div class="form-text">
+                Create a token at
+                <a href="https://hpanel.hostinger.com/api" target="_blank" rel="noopener">hpanel.hostinger.com/api</a>
+                (shown only once). It is stored in this site’s <code>.env</code>, not in Git.
+            </div>
+        </form>
+    @endif
 @else
     <div class="alert alert-info py-2 small">
         Provider: <strong>{{ strtoupper($provider ?? 'hostinger') }}</strong>
-        — creates website + MySQL database, then deploys POSMaster over SSH.
+        — creates website + MySQL database, then deploys POSMaster code.
     </div>
 @endif
 

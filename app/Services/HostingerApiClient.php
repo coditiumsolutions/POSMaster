@@ -30,8 +30,17 @@ class HostingerApiClient
 
     protected function bridgeEnabled(): bool
     {
-        return filter_var(env('NEW_SETUP_HOSTINGER_MCP_BRIDGE', true), FILTER_VALIDATE_BOOLEAN)
-            && is_dir(dirname($this->queueDir));
+        // Cursor MCP queue only works on a local PC with .secrets/ — never on Hostinger web PHP.
+        if (HostingerSshClient::detectLocalMode()) {
+            return false;
+        }
+
+        $flag = env('NEW_SETUP_HOSTINGER_MCP_BRIDGE');
+        $enabled = $flag === null || $flag === ''
+            ? true
+            : filter_var($flag, FILTER_VALIDATE_BOOLEAN);
+
+        return $enabled && is_dir(dirname($this->queueDir));
     }
 
     /**

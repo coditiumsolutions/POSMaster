@@ -57,6 +57,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/setup/system', [SystemSetupController::class, 'update'])->name('setup.system.update');
         Route::get('/setup/new', [NewSetupController::class, 'create'])->name('setup.new');
         Route::post('/setup/new', [NewSetupController::class, 'store'])->name('setup.new.store');
+        Route::post('/setup/new/hostinger-token', [NewSetupController::class, 'storeHostingerToken'])->name('setup.new.hostinger-token');
     });
 
 

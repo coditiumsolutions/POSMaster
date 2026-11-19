@@ -36,10 +36,100 @@ class NewClientSetupService
             $api = $this->hostingerApi();
             $ssh = $this->hostingerSsh();
 
+            // On Hostinger web PHP, API token is required (MCP bridge is local-only).
+            if ($ssh->isLocalMode() && (string) config('new_setup.hostinger.api_token', '') === '') {
+                return false;
+            }
+
             return $api->configured() && $ssh->configured();
         }
 
         return $this->plesk->configured();
+    }
+
+    /**
+     * Human-readable reason when New Setup is not ready (shown on the form).
+     */
+    public function configurationHint(): string
+    {
+        if ($this->provider() !== 'hostinger') {
+            return 'Software must set NEW_SETUP_PLESK_USER and NEW_SETUP_PLESK_PASSWORD in .env.';
+        }
+
+        $ssh = $this->hostingerSsh();
+        if ($ssh->isLocalMode()) {
+            return 'Paste a Hostinger API token below (create one at https://hpanel.hostinger.com/api). '
+                . 'SSH is not required on this server — provisioning uses the API and local files.';
+        }
+
+        if (!$ssh->configured()) {
+            return 'Set Hostinger SSH key path (NEW_SETUP_HOSTINGER_SSH_KEY or .secrets/hostinger-ssh.env).';
+        }
+
+        return 'Set NEW_SETUP_HOSTINGER_API_TOKEN (or .secrets/hostinger-api.token), '
+            . 'or keep the Cursor Hostinger MCP bridge running on your local PC.';
+    }
+
+    public function needsHostingerApiToken(): bool
+    {
+        return $this->provider() === 'hostinger'
+            && (string) config('new_setup.hostinger.api_token', '') === '';
+    }
+
+    /**
+     * Persist API token into .env (and optional .secrets file) then refresh config.
+     */
+    public function saveHostingerApiToken(string $token): void
+    {
+        $token = trim($token);
+        if (strlen($token) < 20) {
+            throw new RuntimeException('API token looks too short.');
+        }
+
+        $envPath = base_path('.env');
+        if (!is_file($envPath) || !is_writable($envPath)) {
+            throw new RuntimeException('Cannot write .env on this server.');
+        }
+
+        $contents = file_get_contents($envPath);
+        if ($contents === false) {
+            throw new RuntimeException('Unable to read .env.');
+        }
+
+        $pairs = [
+            'NEW_SETUP_PROVIDER' => 'hostinger',
+            'NEW_SETUP_HOSTINGER_LOCAL' => 'true',
+            'NEW_SETUP_HOSTINGER_MCP_BRIDGE' => 'false',
+            'NEW_SETUP_HOSTINGER_USERNAME' => (string) config('new_setup.hostinger.username', 'u627902364'),
+            'NEW_SETUP_HOSTINGER_ORDER_ID' => (string) ((int) config('new_setup.hostinger.order_id', 1010329424)),
+            'NEW_SETUP_HOSTINGER_API_TOKEN' => $token,
+        ];
+
+        foreach ($pairs as $key => $value) {
+            $row = $key . '=' . $this->envValue($value);
+            if (preg_match('/^' . preg_quote($key, '/') . '=.*$/m', $contents)) {
+                $contents = preg_replace('/^' . preg_quote($key, '/') . '=.*$/m', $row, $contents, 1);
+            } else {
+                $contents = rtrim($contents) . "\n" . $row . "\n";
+            }
+        }
+
+        if (file_put_contents($envPath, $contents) === false) {
+            throw new RuntimeException('Failed writing API token to .env.');
+        }
+
+        $secretsDir = base_path('.secrets');
+        if (is_dir($secretsDir) && is_writable($secretsDir)) {
+            @file_put_contents($secretsDir . '/hostinger-api.token', $token . "\n");
+        }
+
+        config([
+            'new_setup.provider' => 'hostinger',
+            'new_setup.hostinger.api_token' => $token,
+        ]);
+        if (function_exists('opcache_invalidate')) {
+            @opcache_invalidate($envPath, true);
+        }
     }
 
     protected function hostingerApi(): HostingerApiClient
@@ -55,12 +145,15 @@ class NewClientSetupService
     protected function hostingerSsh(): HostingerSshClient
     {
         $cfg = (array) config('new_setup.hostinger', []);
+        $user = (string) ($cfg['username'] ?? $cfg['ssh_user'] ?? '');
+        $local = HostingerSshClient::detectLocalMode($user);
 
         return new HostingerSshClient(
             (string) ($cfg['ssh_host'] ?? ''),
             (int) ($cfg['ssh_port'] ?? 65002),
-            (string) ($cfg['ssh_user'] ?? ''),
+            $user !== '' ? $user : (string) ($cfg['ssh_user'] ?? ''),
             (string) ($cfg['ssh_identity_file'] ?? ''),
+            $local,
         );
     }
 
@@ -281,10 +374,12 @@ class NewClientSetupService
             $steps[] = 'Remote DB access skipped: ' . $e->getMessage();
         }
 
-        // 3) Deploy code via SSH git clone (account deploy key already on GitHub)
-        $steps[] = 'Deploying POSMaster code over SSH…';
-        $this->hostingerDeployCode($ssh, $domainRoot, $gitRepo, $gitBranch);
-        $steps[] = 'Application files deployed and public_html linked to public/.';
+        // 3) Deploy code (API git on Hostinger local mode; SSH git clone from a PC)
+        $steps[] = $ssh->isLocalMode()
+            ? 'Deploying POSMaster via Hostinger Git API…'
+            : 'Deploying POSMaster code over SSH…';
+        $this->hostingerDeployCode($api, $ssh, $username, $fullDomain, $domainRoot, $gitRepo, $gitBranch);
+        $steps[] = 'Application files deployed.';
 
         // 4) Write .env
         $steps[] = 'Writing .env for new project…';
@@ -312,6 +407,10 @@ class NewClientSetupService
         // 5) Schema + seed into NEW database only (prefer external MySQL host from this machine)
         $externalHost = (string) ($cfg['db_host_external'] ?? 'srv547.hstgr.io');
         $externalPort = (int) ($cfg['db_port'] ?? 3306);
+        // From Hostinger itself, localhost MySQL is preferred
+        if ($ssh->isLocalMode()) {
+            $externalHost = '127.0.0.1';
+        }
         $steps[] = 'Importing blank schema into new database…';
         $schemaSql = $this->buildBlankSchemaSql();
         $this->importSqlIntoHostingerDatabase(
@@ -338,16 +437,25 @@ class NewClientSetupService
         );
         $steps[] = 'Blank starter data ready.';
 
-        // 6) Laravel post-install on server
-        $steps[] = 'Running Laravel storage link / cache clear…';
-        $post = 'cd ' . $this->bashQuote($domainRoot)
-            . ' && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache'
-            . ' && php artisan storage:link >/dev/null 2>&1 || true'
-            . ' && php artisan config:clear >/dev/null 2>&1 || true'
-            . ' && php artisan route:clear >/dev/null 2>&1 || true'
-            . ' && php artisan view:clear >/dev/null 2>&1 || true';
-        $ssh->run('bash -lc ' . $this->bashQuote($post), 180);
-        $steps[] = 'Laravel caches refreshed.';
+        // 6) Laravel post-install
+        $steps[] = 'Preparing storage directories…';
+        $ssh->ensureDirs([
+            $domainRoot . '/storage/framework/cache',
+            $domainRoot . '/storage/framework/sessions',
+            $domainRoot . '/storage/framework/views',
+            $domainRoot . '/storage/logs',
+            $domainRoot . '/bootstrap/cache',
+            $domainRoot . '/storage/app/public',
+        ]);
+        if (!$ssh->isLocalMode()) {
+            $post = 'cd ' . $this->bashQuote($domainRoot)
+                . ' && php artisan storage:link >/dev/null 2>&1 || true'
+                . ' && php artisan config:clear >/dev/null 2>&1 || true'
+                . ' && php artisan route:clear >/dev/null 2>&1 || true'
+                . ' && php artisan view:clear >/dev/null 2>&1 || true';
+            $ssh->run('bash -lc ' . $this->bashQuote($post), 180);
+        }
+        $steps[] = 'Storage directories ready.';
 
         return [
             'project_name' => $projectName,
@@ -368,8 +476,36 @@ class NewClientSetupService
         ];
     }
 
-    protected function hostingerDeployCode(HostingerSshClient $ssh, string $domainRoot, string $gitRepo, string $gitBranch): void
-    {
+    protected function hostingerDeployCode(
+        HostingerApiClient $api,
+        HostingerSshClient $ssh,
+        string $username,
+        string $fullDomain,
+        string $domainRoot,
+        string $gitRepo,
+        string $gitBranch
+    ): void {
+        if ($ssh->isLocalMode()) {
+            $publicHtml = $domainRoot . '/public_html';
+            // Git deploy requires an empty/missing document root (or the same repo).
+            if (is_dir($publicHtml)) {
+                $ssh->deletePath($publicHtml);
+            }
+            if (!is_dir($publicHtml) && !@mkdir($publicHtml, 0755, true) && !is_dir($publicHtml)) {
+                throw new RuntimeException('Could not recreate public_html for git deploy.');
+            }
+
+            $deploy = $api->deployGitRepository($username, $fullDomain, $gitRepo, $gitBranch, '');
+            if (isset($deploy['is_success']) && $deploy['is_success'] === false) {
+                $log = (string) ($deploy['log'] ?? json_encode($deploy));
+                throw new RuntimeException('Hostinger git deploy failed: ' . $log);
+            }
+
+            $this->restructureLaravelDocumentRoot($domainRoot);
+
+            return;
+        }
+
         $script = <<<'BASH'
 set -euo pipefail
 DOMAIN_ROOT=__DOMAIN_ROOT__
@@ -379,7 +515,6 @@ BRANCH=__BRANCH__
 mkdir -p "$DOMAIN_ROOT"
 cd "$DOMAIN_ROOT"
 
-# Preserve any panel default public_html content briefly
 if [ -d public_html ] && [ ! -L public_html ]; then
   rm -rf _panel_public_html_bak
   mv public_html _panel_public_html_bak
@@ -388,19 +523,16 @@ fi
 rm -rf _pos_repo
 GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new" git clone --depth 1 --branch "$BRANCH" "$REPO" _pos_repo
 
-# Move repo contents into domain root (Laravel layout)
 shopt -s dotglob nullglob
 mv _pos_repo/* .
 rm -rf _pos_repo
 
-# Document root must serve Laravel public/
 rm -rf public_html
 ln -sfn public public_html
 
 mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
 chmod -R ug+rwx storage bootstrap/cache || true
 
-# Composer (git deploy key path already used for clone; composer uses packagist)
 if [ -f composer.json ]; then
   if [ ! -d vendor ]; then
     composer install --no-dev --optimize-autoloader --no-interaction 2>&1 || composer2 install --no-dev --optimize-autoloader --no-interaction 2>&1 || true
@@ -421,6 +553,89 @@ BASH;
         $out = $ssh->run('bash ' . escapeshellarg($remotePath) . '; rm -f ' . escapeshellarg($remotePath), 900);
         if (!str_contains($out, 'DEPLOY_OK')) {
             throw new RuntimeException('Hostinger code deploy did not complete cleanly: ' . trim($out));
+        }
+    }
+
+    /**
+     * After git clones into public_html, move Laravel to domain root and publish public/ as a real public_html
+     * (Hostinger PHP disables symlink()).
+     */
+    protected function restructureLaravelDocumentRoot(string $domainRoot): void
+    {
+        $publicHtml = $domainRoot . '/public_html';
+        if (!is_dir($publicHtml . '/artisan') && !is_file($publicHtml . '/artisan')) {
+            // Already restructured, or unexpected layout
+            if (is_file($domainRoot . '/artisan') && is_dir($domainRoot . '/public')) {
+                $this->publishPublicToPublicHtml($domainRoot);
+
+                return;
+            }
+            throw new RuntimeException('Git deploy did not place Laravel files in public_html.');
+        }
+
+        $skip = ['.', '..'];
+        $items = scandir($publicHtml);
+        if ($items === false) {
+            throw new RuntimeException('Unable to read public_html after git deploy.');
+        }
+        foreach ($items as $item) {
+            if (in_array($item, $skip, true)) {
+                continue;
+            }
+            $from = $publicHtml . '/' . $item;
+            $to = $domainRoot . '/' . $item;
+            if (file_exists($to)) {
+                $this->hostingerSsh()->deletePath($to);
+            }
+            if (!@rename($from, $to)) {
+                throw new RuntimeException('Failed moving ' . $item . ' out of public_html.');
+            }
+        }
+        @rmdir($publicHtml);
+        $this->publishPublicToPublicHtml($domainRoot);
+    }
+
+    protected function publishPublicToPublicHtml(string $domainRoot): void
+    {
+        $public = $domainRoot . '/public';
+        $publicHtml = $domainRoot . '/public_html';
+        if (!is_dir($public)) {
+            throw new RuntimeException('Laravel public/ folder missing after deploy.');
+        }
+        if (is_link($publicHtml) || is_file($publicHtml)) {
+            @unlink($publicHtml);
+        }
+        if (is_dir($publicHtml)) {
+            $this->hostingerSsh()->deletePath($publicHtml);
+        }
+        if (!@mkdir($publicHtml, 0755, true) && !is_dir($publicHtml)) {
+            throw new RuntimeException('Could not create public_html directory.');
+        }
+        $this->copyDirectory($public, $publicHtml);
+    }
+
+    protected function copyDirectory(string $src, string $dst): void
+    {
+        if (!is_dir($dst) && !@mkdir($dst, 0755, true) && !is_dir($dst)) {
+            throw new RuntimeException('Could not create directory: ' . $dst);
+        }
+        $items = scandir($src);
+        if ($items === false) {
+            throw new RuntimeException('Could not read directory: ' . $src);
+        }
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $from = $src . '/' . $item;
+            $to = $dst . '/' . $item;
+            if (is_dir($from)) {
+                $this->copyDirectory($from, $to);
+            } else {
+                if (!@copy($from, $to)) {
+                    throw new RuntimeException('Could not copy file: ' . $from);
+                }
+            }
         }
     }
 
