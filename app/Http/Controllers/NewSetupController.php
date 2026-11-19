@@ -19,6 +19,9 @@ class NewSetupController extends Controller
             'provider' => $service->provider(),
             'configurationHint' => $service->configurationHint(),
             'baseDomain' => (string) config('new_setup.base_domain'),
+            'defaultDbPassword' => (string) config('new_setup.default_db_password'),
+            'defaultAdminUsername' => (string) config('new_setup.default_admin_username'),
+            'defaultAdminPassword' => (string) config('new_setup.default_admin_password'),
             'result' => session('new_setup_result'),
             // Master always shows token management (add or replace)
             'showHostingerTokenForm' => true,
@@ -34,9 +37,6 @@ class NewSetupController extends Controller
             'project_name' => ['required', 'string', 'max:80'],
             'subdomain' => ['required', 'string', 'max:40', 'regex:/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/'],
             'database_name' => ['required', 'string', 'max:40', 'regex:/^[A-Za-z0-9_]+$/'],
-            'db_password' => ['required', 'string', 'min:10', 'max:64'],
-            'admin_username' => ['required', 'string', 'max:50'],
-            'admin_password' => ['required', 'string', 'min:6', 'max:64'],
             'confirm_isolated' => ['accepted'],
         ], [
             'confirm_isolated.accepted' => 'You must confirm this will create a separate copy and will not change LipSip.',
@@ -48,13 +48,13 @@ class NewSetupController extends Controller
                 'project_name' => $validated['project_name'],
                 'subdomain' => strtolower($validated['subdomain']),
                 'database_name' => $validated['database_name'],
-                'db_password' => $validated['db_password'],
-                'admin_username' => $validated['admin_username'],
-                'admin_password' => $validated['admin_password'],
+                'db_password' => (string) config('new_setup.default_db_password'),
+                'admin_username' => (string) config('new_setup.default_admin_username'),
+                'admin_password' => (string) config('new_setup.default_admin_password'),
             ]);
         } catch (Throwable $e) {
             return back()
-                ->withInput($request->except(['db_password', 'admin_password']))
+                ->withInput()
                 ->withErrors(['setup' => $e->getMessage()]);
         }
 

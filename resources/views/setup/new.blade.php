@@ -88,7 +88,8 @@
             <div class="col-md-6"><strong>Folder:</strong> {{ $result['folder'] ?? $result['target_root'] ?? '—' }}</div>
             <div class="col-md-6"><strong>Database:</strong> {{ $result['database'] }}</div>
             <div class="col-md-6"><strong>DB user:</strong> {{ $result['db_user'] }}</div>
-            <div class="col-md-6"><strong>Admin login:</strong> {{ $result['admin_username'] }}</div>
+            <div class="col-md-6"><strong>Admin login:</strong> {{ $result['admin_username'] }} / {{ $defaultAdminPassword ?? 'Coditium$2020' }}</div>
+            <div class="col-md-6"><strong>MySQL password:</strong> {{ $defaultDbPassword ?? 'Coditium$Solutions@2020' }}</div>
         </div>
         @if(!empty($result['steps']))
             <details class="small mt-2">
@@ -137,20 +138,15 @@
             <div class="form-text">Hostinger will prefix with the account username automatically.</div>
         </div>
         <div class="col-md-6">
-            <label class="form-label" for="db_password">New database password *</label>
-            <input id="db_password" type="password" name="db_password" class="form-control" required minlength="10" maxlength="64" autocomplete="new-password">
-            <div class="form-text">
-                Min 10 chars with upper, lower, number, and symbol. Avoid common/leaked passwords (Hostinger will reject them).
+            <div class="border rounded p-3 bg-white h-100">
+                <div class="fw-semibold mb-2">Fixed credentials (every new copy)</div>
+                <div class="small mb-1"><strong>MySQL password:</strong> <code>{{ $defaultDbPassword }}</code></div>
+                <div class="small mb-0">
+                    <strong>Admin login:</strong>
+                    user <code>{{ $defaultAdminUsername }}</code>,
+                    password <code>{{ $defaultAdminPassword }}</code>
+                </div>
             </div>
-        </div>
-        <div class="col-md-6">
-            <label class="form-label" for="admin_username">First admin username *</label>
-            <input id="admin_username" type="text" name="admin_username" class="form-control"
-                   value="{{ old('admin_username', 'software') }}" required maxlength="50">
-        </div>
-        <div class="col-md-6">
-            <label class="form-label" for="admin_password">First admin password *</label>
-            <input id="admin_password" type="password" name="admin_password" class="form-control" required minlength="6" maxlength="64" autocomplete="new-password">
         </div>
         <div class="col-12">
             <div class="form-check">
@@ -164,7 +160,7 @@
             <button type="submit" class="btn btn-primary" @disabled(!$configured) id="newSetupSubmit">
                 Create New Project
             </button>
-            <span class="small text-muted align-self-center">This can take several minutes (website + git + schema).</span>
+            <span class="small text-muted align-self-center">This can take several minutes (website + copy + schema).</span>
         </div>
     </div>
 </form>

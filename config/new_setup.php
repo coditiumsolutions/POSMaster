@@ -30,6 +30,11 @@ return [
 
     'base_domain' => env('NEW_SETUP_BASE_DOMAIN', 'coditium.com'),
 
+    // Fixed credentials for every new client copy (not collected on the form)
+    'default_db_password' => env('NEW_SETUP_DB_PASSWORD', 'Coditium$Solutions@2020'),
+    'default_admin_username' => env('NEW_SETUP_ADMIN_USERNAME', 'Admin'),
+    'default_admin_password' => env('NEW_SETUP_ADMIN_PASSWORD', 'Coditium$2020'),
+
     // Never allow cloning over these
     'reserved_subdomains' => [
         'lipsip', 'lipsipp', 'lipsippp', 'www', 'mail', 'ftp', 'webmail', 'cpanel',
