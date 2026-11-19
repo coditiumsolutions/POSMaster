@@ -4,7 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Login - Coditium POS</title>
+    <title>Coditium POS | Billing, Inventory &amp; Sales Software for Your Business</title>
+    <meta name="description" content="Billing, inventory, and sales reports in one place, built for retail shops, restaurants, pharmacies, and multi-branch businesses.">
+    <meta property="og:title" content="Coditium POS | Billing, Inventory &amp; Sales Software for Your Business">
+    <meta property="og:description" content="Billing, inventory, and sales reports in one place, built for retail shops, restaurants, pharmacies, and multi-branch businesses.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:site_name" content="Coditium Solutions">
+    <script type="application/ld+json">
+    {!! json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'Organization',
+        'name' => 'Coditium Solutions',
+        'url' => 'https://www.coditium.com',
+        'telephone' => '+923335191392',
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) !!}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,214 +30,198 @@
             --navy: #0b1f3a;
             --navy-deep: #071528;
             --royal: #1d4ed8;
-            --violet: #5b21b6;
-            --cyan: #22d3ee;
+            --cyan: #0891b2;
             --cyan-soft: #67e8f9;
             --ink: #0f172a;
             --muted: #64748b;
             --card: #ffffff;
             --line: rgba(148, 163, 184, 0.28);
-            --shadow: 0 24px 60px rgba(7, 21, 40, 0.28);
-            --radius: 1.25rem;
+            --surface: #f8fafc;
+            --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+            --radius: 1.15rem;
             --font-display: "Outfit", system-ui, sans-serif;
             --font-body: "Source Sans 3", system-ui, sans-serif;
+            --wa: #25d366;
+            --mustard: #d4a017;
+            --mustard-deep: #b8860b;
         }
 
         * { box-sizing: border-box; }
 
+        html { scroll-behavior: smooth; }
+
         body {
             margin: 0;
-            min-height: 100vh;
             font-family: var(--font-body);
             color: var(--ink);
             background:
-                radial-gradient(circle at 12% 18%, rgba(34, 211, 238, 0.22), transparent 34%),
-                radial-gradient(circle at 88% 12%, rgba(91, 33, 182, 0.28), transparent 32%),
-                linear-gradient(135deg, #071528 0%, #0b1f3a 42%, #123a7a 72%, #1e3a8a 100%);
+                linear-gradient(180deg, rgba(11, 31, 58, 0.55) 0%, rgba(248, 250, 252, 0.92) 42%, #ffffff 100%),
+                url("https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=1920&q=80") center top / cover no-repeat fixed;
             overflow-x: hidden;
         }
 
-        .login-shell {
-            min-height: 100vh;
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        .nav-link:focus-visible,
+        .btn:focus-visible {
+            outline: 3px solid rgba(212, 160, 23, 0.65);
+            outline-offset: 2px;
+        }
+
+        .site-nav {
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+            background: var(--mustard);
+            border-bottom: 1px solid var(--mustard-deep);
+            box-shadow: 0 8px 20px rgba(184, 134, 11, 0.28);
+        }
+
+        .site-nav .navbar-brand {
+            font-family: var(--font-display);
+            font-weight: 800;
+            color: var(--navy-deep);
+            letter-spacing: -0.02em;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+        }
+
+        .brand-mark {
+            width: 2.15rem;
+            height: 2.15rem;
+            border-radius: 0.65rem;
             display: grid;
             place-items: center;
-            padding: 1.25rem;
-        }
-
-        .login-stage {
-            width: min(1120px, 100%);
-            min-height: min(680px, calc(100vh - 2.5rem));
-            display: grid;
-            grid-template-columns: 1.08fr 0.92fr;
-            border-radius: calc(var(--radius) + 0.35rem);
-            overflow: hidden;
-            box-shadow: var(--shadow);
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(8px);
-            animation: stageIn 0.7s ease both;
-        }
-
-        @keyframes stageIn {
-            from { opacity: 0; transform: translateY(18px) scale(0.985); }
-            to { opacity: 1; transform: none; }
-        }
-
-        .login-brand {
-            position: relative;
             color: #fff;
-            padding: clamp(1.75rem, 4vw, 3rem);
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
+            background: linear-gradient(135deg, var(--navy) 0%, var(--royal) 100%);
+            font-size: 1.05rem;
+            flex: 0 0 auto;
+        }
+
+        .site-nav .nav-link {
+            color: #3b2f0b;
+            font-weight: 600;
+            font-size: 0.92rem;
+            padding: 0.45rem 0.7rem !important;
+        }
+
+        .site-nav .nav-link:hover { color: var(--navy-deep); }
+
+        .site-nav .navbar-toggler {
+            border-color: rgba(11, 31, 58, 0.35);
+        }
+
+        .site-nav .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(11, 31, 58, 0.9)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+
+        .btn-nav-login {
+            border: 1px solid rgba(11, 31, 58, 0.28);
+            background: #fff8e1;
+            color: var(--navy-deep);
+            font-weight: 700;
+            border-radius: 0.75rem;
+            padding: 0.45rem 0.95rem;
+        }
+
+        .btn-nav-login:hover {
+            background: #fff;
+            color: var(--navy);
+            border-color: rgba(11, 31, 58, 0.45);
+        }
+
+        .btn-demo {
+            background: linear-gradient(135deg, var(--royal) 0%, var(--cyan) 100%);
+            color: #fff !important;
+            font-weight: 700;
+            border: 0;
+            border-radius: 0.75rem;
+            padding: 0.5rem 1rem;
+            box-shadow: 0 8px 18px rgba(29, 78, 216, 0.22);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .btn-demo:hover {
+            filter: saturate(1.05);
+            color: #fff !important;
+            transform: translateY(-1px);
+        }
+
+        .btn-outline-soft {
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: var(--navy);
+            font-weight: 700;
+            border-radius: 0.85rem;
+            padding: 0.7rem 1.15rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .btn-outline-soft:hover {
+            background: var(--surface);
+            color: var(--royal);
+        }
+
+        .hero {
+            position: relative;
+            padding: clamp(2rem, 5vw, 4rem) 0 clamp(3rem, 6vw, 5rem);
             isolation: isolate;
             overflow: hidden;
-            background:
-                linear-gradient(160deg, rgba(7, 21, 40, 0.35) 0%, rgba(11, 31, 58, 0.55) 40%, rgba(29, 78, 216, 0.72) 100%),
-                url("https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80") center/cover no-repeat;
+            background: transparent;
         }
 
-        .login-brand::before {
+        .hero::before {
             content: "";
             position: absolute;
             inset: 0;
+            z-index: -1;
             background:
-                linear-gradient(180deg, rgba(7, 21, 40, 0.15) 0%, rgba(7, 21, 40, 0.78) 78%),
-                radial-gradient(circle at 80% 20%, rgba(34, 211, 238, 0.35), transparent 40%),
-                radial-gradient(circle at 20% 80%, rgba(91, 33, 182, 0.35), transparent 42%);
-            z-index: -1;
+                linear-gradient(120deg, rgba(255, 248, 225, 0.88) 0%, rgba(255, 255, 255, 0.82) 48%, rgba(11, 31, 58, 0.35) 100%),
+                url("https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1920&q=80") center / cover no-repeat;
         }
 
-        .login-brand::after {
-            content: "";
-            position: absolute;
-            width: 18rem;
-            height: 18rem;
-            right: -4rem;
-            top: -3rem;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(34, 211, 238, 0.28), transparent 68%);
-            z-index: -1;
-            animation: glowPulse 5s ease-in-out infinite;
-        }
-
-        @keyframes glowPulse {
-            0%, 100% { transform: scale(1); opacity: 0.75; }
-            50% { transform: scale(1.08); opacity: 1; }
-        }
-
-        .brand-kicker {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.45rem;
-            padding: 0.35rem 0.7rem;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #e2e8f0;
-            font-size: 0.78rem;
-            font-weight: 600;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            width: fit-content;
-            margin-bottom: 1rem;
-            animation: riseIn 0.7s ease 0.1s both;
-        }
-
-        .brand-title {
+        .hero-copy h1 {
             font-family: var(--font-display);
-            font-size: clamp(2.2rem, 4vw, 3.4rem);
+            font-size: clamp(2rem, 4.2vw, 3.15rem);
             font-weight: 800;
-            line-height: 1.05;
             letter-spacing: -0.03em;
-            margin: 0 0 0.75rem;
-            animation: riseIn 0.7s ease 0.18s both;
+            line-height: 1.12;
+            color: var(--navy);
+            margin: 0 0 1rem;
         }
 
-        .brand-title span {
-            background: linear-gradient(90deg, #fff 10%, var(--cyan-soft) 55%, #c4b5fd 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+        .hero-copy .lead {
+            font-size: clamp(1.02rem, 1.5vw, 1.18rem);
+            color: #475569;
+            max-width: 36rem;
+            margin-bottom: 1.5rem;
         }
 
-        .brand-tagline {
-            font-size: clamp(1rem, 1.6vw, 1.2rem);
-            color: rgba(226, 232, 240, 0.92);
-            max-width: 28rem;
-            margin: 0 0 0.65rem;
-            animation: riseIn 0.7s ease 0.26s both;
-        }
-
-        .brand-tagline + .brand-tagline {
-            margin-bottom: 1.75rem;
-            font-size: clamp(0.95rem, 1.4vw, 1.1rem);
-            color: rgba(226, 232, 240, 0.78);
-            animation-delay: 0.3s;
-        }
-
-        .brand-points {
-            display: grid;
-            gap: 0.75rem;
-            margin: 0;
-            padding: 0;
-            list-style: none;
-        }
-
-        .brand-points li {
+        .hero-actions {
             display: flex;
-            align-items: center;
+            flex-wrap: wrap;
             gap: 0.75rem;
-            padding: 0.75rem 0.9rem;
-            border-radius: 0.9rem;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(6px);
-            animation: riseIn 0.65s ease both;
+            margin-bottom: 1.15rem;
         }
 
-        .brand-points li:nth-child(1) { animation-delay: 0.34s; }
-        .brand-points li:nth-child(2) { animation-delay: 0.42s; }
-        .brand-points li:nth-child(3) { animation-delay: 0.5s; }
-
-        .brand-points .icon {
-            width: 2.35rem;
-            height: 2.35rem;
-            border-radius: 0.7rem;
-            display: grid;
-            place-items: center;
-            flex: 0 0 auto;
-            color: var(--navy-deep);
-            background: linear-gradient(135deg, var(--cyan-soft), #a5b4fc);
-            font-size: 1.05rem;
-        }
-
-        .brand-points strong {
-            display: block;
-            font-family: var(--font-display);
-            font-size: 0.95rem;
-            font-weight: 700;
-        }
-
-        .brand-points span {
-            display: block;
-            font-size: 0.8rem;
-            color: rgba(226, 232, 240, 0.78);
-        }
-
-        @keyframes riseIn {
-            from { opacity: 0; transform: translateY(14px); }
-            to { opacity: 1; transform: none; }
+        .trust-line {
+            color: var(--muted);
+            font-size: 0.92rem;
+            font-weight: 600;
         }
 
         .login-panel {
-            background:
-                radial-gradient(circle at 100% 0%, rgba(34, 211, 238, 0.08), transparent 28%),
-                linear-gradient(180deg, #f8fafc 0%, #ffffff 40%, #f1f5f9 100%);
             display: flex;
-            align-items: center;
+            align-items: stretch;
             justify-content: center;
-            padding: clamp(1.25rem, 3vw, 2.5rem);
         }
 
         .login-card {
@@ -230,9 +229,8 @@
             background: var(--card);
             border-radius: var(--radius);
             border: 1px solid var(--line);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+            box-shadow: var(--shadow);
             padding: clamp(1.4rem, 3vw, 2.15rem);
-            animation: riseIn 0.7s ease 0.2s both;
         }
 
         .login-logo {
@@ -244,18 +242,8 @@
             margin: 0 auto 1rem;
             color: #fff;
             font-size: 1.45rem;
-            background: linear-gradient(135deg, var(--royal) 0%, var(--violet) 55%, #0891b2 100%);
-            box-shadow: 0 12px 24px rgba(29, 78, 216, 0.35);
-        }
-
-        .login-card h1 {
-            font-family: var(--font-display);
-            font-size: 1.85rem;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            text-align: center;
-            margin: 0 0 0.35rem;
-            color: var(--navy);
+            background: linear-gradient(135deg, var(--royal) 0%, var(--cyan) 100%);
+            box-shadow: 0 12px 24px rgba(29, 78, 216, 0.28);
         }
 
         .login-card .subtitle {
@@ -272,9 +260,7 @@
             margin-bottom: 0.35rem;
         }
 
-        .input-shell {
-            position: relative;
-        }
+        .input-shell { position: relative; }
 
         .input-shell > i {
             position: absolute;
@@ -302,9 +288,7 @@
             box-shadow: 0 0 0 0.25rem rgba(34, 211, 238, 0.18);
         }
 
-        .input-shell.password-shell .form-control {
-            padding-right: 2.75rem;
-        }
+        .input-shell.password-shell .form-control { padding-right: 2.75rem; }
 
         .toggle-password {
             position: absolute;
@@ -360,7 +344,7 @@
         }
 
         .forgot-link:hover {
-            color: var(--violet);
+            color: var(--cyan);
             text-decoration: underline;
         }
 
@@ -374,7 +358,7 @@
             font-size: 1.02rem;
             letter-spacing: 0.01em;
             color: #fff;
-            background: linear-gradient(135deg, #1d4ed8 0%, #4f46e5 48%, #0891b2 100%);
+            background: linear-gradient(135deg, #1d4ed8 0%, #0891b2 100%);
             box-shadow: 0 12px 24px rgba(29, 78, 216, 0.28);
             transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
         }
@@ -408,26 +392,213 @@
             font-size: 0.78rem;
         }
 
-        @media (max-width: 991.98px) {
-            .login-stage {
-                grid-template-columns: 1fr;
-                min-height: auto;
-            }
-
-            .login-brand {
-                min-height: 280px;
-                justify-content: center;
-            }
-
-            .brand-points {
-                grid-template-columns: 1fr;
-            }
+        .section {
+            padding: clamp(3rem, 6vw, 5rem) 0;
+            background: rgba(255, 255, 255, 0.94);
         }
 
-        @media (max-width: 575.98px) {
-            .login-shell { padding: 0.75rem; }
-            .login-brand { min-height: 240px; padding: 1.25rem; }
-            .brand-points li { padding: 0.65rem 0.75rem; }
+        .section-muted { background: rgba(248, 250, 252, 0.96); }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--navy);
+            margin-bottom: 0.5rem;
+        }
+
+        .section-lead {
+            color: var(--muted);
+            max-width: 40rem;
+            margin: 0 auto 2.25rem;
+        }
+
+        .feature-card,
+        .audience-tile,
+        .step-card,
+        .shot-card,
+        .quote-card {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            height: 100%;
+        }
+
+        .feature-card {
+            padding: 1.5rem;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 22px 44px rgba(15, 23, 42, 0.1);
+        }
+
+        .feature-icon,
+        .audience-icon,
+        .step-num {
+            width: 2.75rem;
+            height: 2.75rem;
+            border-radius: 0.8rem;
+            display: grid;
+            place-items: center;
+            margin-bottom: 1rem;
+            color: #fff;
+            background: linear-gradient(135deg, var(--royal), var(--cyan));
+            font-size: 1.15rem;
+        }
+
+        .feature-card h3,
+        .step-card h3,
+        .audience-tile h3 {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card p,
+        .step-card p {
+            color: #64748b;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .audience-tile {
+            padding: 1.25rem 1rem;
+            text-align: center;
+        }
+
+        .audience-icon { margin: 0 auto 0.85rem; }
+
+        .step-card { padding: 1.5rem; position: relative; }
+
+        .step-num {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1rem;
+        }
+
+        .shot-card {
+            min-height: 180px;
+            display: grid;
+            place-items: center;
+            background:
+                linear-gradient(135deg, rgba(29, 78, 216, 0.06), rgba(8, 145, 178, 0.08)),
+                #fff;
+            color: var(--muted);
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .shot-card img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 0.75rem;
+            background: #e2e8f0;
+        }
+
+        .quote-card {
+            padding: 1.5rem;
+            color: #64748b;
+        }
+
+        .quote-card strong {
+            display: block;
+            margin-top: 1rem;
+            color: var(--navy);
+            font-family: var(--font-display);
+        }
+
+        .accordion-button {
+            font-family: var(--font-display);
+            font-weight: 700;
+            color: var(--navy);
+        }
+
+        .accordion-button:not(.collapsed) {
+            background: #eff6ff;
+            color: var(--royal);
+            box-shadow: none;
+        }
+
+        .accordion-item {
+            border: 1px solid var(--line);
+            border-radius: 0.85rem !important;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+        }
+
+        .cta-banner {
+            background:
+                radial-gradient(circle at 15% 20%, rgba(34, 211, 238, 0.2), transparent 35%),
+                linear-gradient(135deg, var(--navy-deep) 0%, var(--navy) 45%, #123a7a 100%);
+            color: #fff;
+            border-radius: calc(var(--radius) + 0.25rem);
+            padding: clamp(2rem, 4vw, 3rem);
+            box-shadow: 0 24px 50px rgba(7, 21, 40, 0.28);
+        }
+
+        .cta-banner h2 {
+            font-family: var(--font-display);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.65rem;
+        }
+
+        .cta-banner p { color: rgba(226, 232, 240, 0.9); margin-bottom: 1.25rem; }
+
+        .cta-banner a.contact-link {
+            color: var(--cyan-soft);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .cta-banner a.contact-link:hover { text-decoration: underline; }
+
+        .site-footer {
+            border-top: 1px solid var(--line);
+            padding: 1.5rem 0;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .site-footer a {
+            color: var(--royal);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .site-footer a:hover { text-decoration: underline; }
+
+        .wa-float {
+            position: fixed;
+            right: 1.1rem;
+            bottom: 1.1rem;
+            z-index: 1040;
+            width: 3.4rem;
+            height: 3.4rem;
+            border-radius: 999px;
+            background: var(--wa);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-size: 1.65rem;
+            box-shadow: 0 12px 28px rgba(37, 211, 102, 0.4);
+            text-decoration: none;
+            transition: transform 0.15s ease;
+        }
+
+        .wa-float:hover {
+            color: #fff;
+            transform: translateY(-2px) scale(1.04);
+        }
+
+        @media (max-width: 991.98px) {
+            .hero-copy { margin-bottom: 2rem; }
             .login-meta {
                 flex-direction: column;
                 align-items: flex-start;
@@ -436,114 +607,409 @@
     </style>
 </head>
 <body>
-    <div class="login-shell">
-        <div class="login-stage">
-            <section class="login-brand" aria-label="Coditium POS branding">
-                <div class="brand-kicker">
-                    <i class="bi bi-shop-window" aria-hidden="true"></i>
-                    Coditium POS
-                </div>
-                <h1 class="brand-title"><span>Coditium POS</span></h1>
-                <p class="brand-tagline">The Best POS to Boost Your Business</p>
-                <p class="brand-tagline">Manage Your Business. Simplify Your Sales.</p>
-                <ul class="brand-points">
-                    <li>
-                        <span class="icon" aria-hidden="true"><i class="bi bi-box-seam"></i></span>
-                        <div>
-                            <strong>Smart Inventory Management</strong>
-                            <span>Track stock in real time across branches</span>
-                        </div>
+    @php
+        $whatsappDemoUrl = 'https://wa.me/923335191392?text=Hi%2C%20I%20would%20like%20a%20demo%20of%20Coditium%20POS';
+    @endphp
+
+    <nav class="navbar navbar-expand-lg site-nav" aria-label="Primary">
+        <div class="container">
+            <a class="navbar-brand" href="#top">
+                <span class="brand-mark" aria-hidden="true"><i class="bi bi-cart4"></i></span>
+                Coditium POS
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#primaryNav" aria-controls="primaryNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="primaryNav">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+                    <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#who-its-for">Who It's For</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#how-it-works">How It Works</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#faq">FAQ</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+                    <li class="nav-item ms-lg-2">
+                        <a class="btn btn-nav-login" href="#login" id="navLoginBtn">Login</a>
                     </li>
-                    <li>
-                        <span class="icon" aria-hidden="true"><i class="bi bi-lightning-charge"></i></span>
-                        <div>
-                            <strong>Fast &amp; Secure Billing</strong>
-                            <span>Checkout quickly with reliable payments</span>
-                        </div>
-                    </li>
-                    <li>
-                        <span class="icon" aria-hidden="true"><i class="bi bi-graph-up-arrow"></i></span>
-                        <div>
-                            <strong>Powerful Sales Analytics</strong>
-                            <span>Understand performance at a glance</span>
-                        </div>
+                    <li class="nav-item ms-lg-2 mt-2 mt-lg-0">
+                        <a class="btn-demo" href="{{ $whatsappDemoUrl }}" target="_blank" rel="noopener noreferrer">
+                            <i class="bi bi-whatsapp" aria-hidden="true"></i>
+                            Book a Free Demo
+                        </a>
                     </li>
                 </ul>
-            </section>
-
-            <section class="login-panel">
-                <div class="login-card">
-                    <div class="login-logo" aria-hidden="true">
-                        <i class="bi bi-cart4"></i>
-                    </div>
-                    <p class="subtitle">Sign in to access your POS dashboard.</p>
-
-                    @if($errors->any())
-                        <div class="login-alert" role="alert">
-                            @foreach($errors->all() as $error)
-                                <div>{{ $error }}</div>
-                            @endforeach
-                        </div>
-                    @endif
-
-                    <form method="POST" action="{{ route('login') }}" autocomplete="on">
-                        @csrf
-
-                        <div class="mb-3">
-                            <label class="form-label" for="user_name">Username</label>
-                            <div class="input-shell">
-                                <i class="bi bi-person" aria-hidden="true"></i>
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    id="user_name"
-                                    name="user_name"
-                                    value="{{ old('user_name') }}"
-                                    required
-                                    autofocus
-                                    autocomplete="username"
-                                    placeholder="Enter your username">
-                            </div>
-                        </div>
-
-                        <div class="mb-2">
-                            <label class="form-label" for="password">Password</label>
-                            <div class="input-shell password-shell">
-                                <i class="bi bi-lock" aria-hidden="true"></i>
-                                <input
-                                    type="password"
-                                    class="form-control"
-                                    id="password"
-                                    name="password"
-                                    required
-                                    autocomplete="current-password"
-                                    placeholder="Enter your password">
-                                <button type="button" class="toggle-password" id="togglePassword" aria-label="Show password">
-                                    <i class="bi bi-eye" id="togglePasswordIcon" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="login-meta">
-                            <div class="form-check mb-0">
-                                <input class="form-check-input" type="checkbox" id="remember_ui">
-                                <label class="form-check-label" for="remember_ui">Remember Me</label>
-                            </div>
-                            <span class="forgot-link" title="Contact your administrator to reset your password">Forgot Password?</span>
-                        </div>
-
-                        <button type="submit" class="btn btn-login">
-                            <i class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i>
-                            Login
-                        </button>
-                    </form>
-
-                    <div class="login-footnote">Secure access to your LipSip POS workspace</div>
-                </div>
-            </section>
+            </div>
         </div>
-    </div>
+    </nav>
 
+    <main id="top">
+        <section class="hero">
+            <div class="container">
+                <div class="row align-items-center g-4 g-lg-5">
+                    <div class="col-lg-6 hero-copy">
+                        <h1>Run Your Entire Store from One Simple POS</h1>
+                        <p class="lead">Billing, inventory, and sales reports in one place, built for retail shops, restaurants, pharmacies, and multi-branch businesses.</p>
+                        <div class="hero-actions">
+                            <a class="btn-demo" href="{{ $whatsappDemoUrl }}" target="_blank" rel="noopener noreferrer">
+                                <i class="bi bi-whatsapp" aria-hidden="true"></i>
+                                Book a Free Demo
+                            </a>
+                            <a class="btn-outline-soft" href="#login" id="startTrialBtn">
+                                Start Free Trial
+                            </a>
+                        </div>
+                        {{-- TODO: replace with verified metrics; do not invent statistics --}}
+                        <p class="trust-line mb-0">Setup in under 1 day · Works online &amp; offline · Local support</p>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="login-panel" id="login">
+                            <div class="login-card">
+                                <div class="login-logo" aria-hidden="true">
+                                    <i class="bi bi-cart4"></i>
+                                </div>
+                                <p class="subtitle">Sign in to access your POS dashboard.</p>
+
+                                @if($errors->any())
+                                    <div class="login-alert" role="alert">
+                                        @foreach($errors->all() as $error)
+                                            <div>{{ $error }}</div>
+                                        @endforeach
+                                    </div>
+                                @endif
+
+                                <form method="POST" action="{{ route('login') }}" autocomplete="on">
+                                    @csrf
+
+                                    <div class="mb-3">
+                                        <label class="form-label" for="user_name">Username</label>
+                                        <div class="input-shell">
+                                            <i class="bi bi-person" aria-hidden="true"></i>
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                id="user_name"
+                                                name="user_name"
+                                                value="{{ old('user_name') }}"
+                                                required
+                                                autofocus
+                                                autocomplete="username"
+                                                placeholder="Enter your username">
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <label class="form-label" for="password">Password</label>
+                                        <div class="input-shell password-shell">
+                                            <i class="bi bi-lock" aria-hidden="true"></i>
+                                            <input
+                                                type="password"
+                                                class="form-control"
+                                                id="password"
+                                                name="password"
+                                                required
+                                                autocomplete="current-password"
+                                                placeholder="Enter your password">
+                                            <button type="button" class="toggle-password" id="togglePassword" aria-label="Show password">
+                                                <i class="bi bi-eye" id="togglePasswordIcon" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="login-meta">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="checkbox" id="remember_ui">
+                                            <label class="form-check-label" for="remember_ui">Remember Me</label>
+                                        </div>
+                                        <span class="forgot-link" title="Contact your administrator to reset your password">Forgot Password?</span>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-login">
+                                        <i class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i>
+                                        Login
+                                    </button>
+                                </form>
+
+                                <div class="login-footnote">Secure access to your Coditium POS workspace</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="features">
+            <div class="container">
+                <div class="text-center">
+                    <h2 class="section-title">Everything you need to run the counter</h2>
+                    <p class="section-lead">Inventory, billing, reports, and staff control—designed for busy shops in Pakistan.</p>
+                </div>
+                <div class="row g-4">
+                    <div class="col-md-6 col-xl-3">
+                        <article class="feature-card">
+                            <div class="feature-icon" aria-hidden="true"><i class="bi bi-box-seam"></i></div>
+                            <h3>Never run out of stock</h3>
+                            <p>Track inventory across all branches in real time and get low-stock alerts.</p>
+                        </article>
+                    </div>
+                    <div class="col-md-6 col-xl-3">
+                        <article class="feature-card">
+                            <div class="feature-icon" aria-hidden="true"><i class="bi bi-lightning-charge"></i></div>
+                            <h3>Bill customers in seconds</h3>
+                            <p>Fast checkout with barcode scanning, receipts, and multiple payment methods.</p>
+                        </article>
+                    </div>
+                    <div class="col-md-6 col-xl-3">
+                        <article class="feature-card">
+                            <div class="feature-icon" aria-hidden="true"><i class="bi bi-graph-up-arrow"></i></div>
+                            <h3>See what's making money</h3>
+                            <p>Daily sales, profit, and best-seller reports on your phone.</p>
+                        </article>
+                    </div>
+                    <div class="col-md-6 col-xl-3">
+                        <article class="feature-card">
+                            <div class="feature-icon" aria-hidden="true"><i class="bi bi-people"></i></div>
+                            <h3>Manage staff and branches</h3>
+                            <p>Control who can see and do what, from anywhere.</p>
+                        </article>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section section-muted" id="who-its-for">
+            <div class="container">
+                <div class="text-center">
+                    <h2 class="section-title">Who it's for</h2>
+                    <p class="section-lead">Built for the businesses that keep Pakistan's high streets running.</p>
+                </div>
+                <div class="row g-3 g-md-4">
+                    @foreach([
+                        ['bi-shop', 'Retail Shops'],
+                        ['bi-cup-hot', 'Restaurants & Cafes'],
+                        ['bi-capsule', 'Pharmacies'],
+                        ['bi-basket2', 'Supermarkets'],
+                        ['bi-scissors', 'Salons'],
+                        ['bi-building', 'Multi-Branch Businesses'],
+                    ] as [$icon, $label])
+                        <div class="col-6 col-md-4 col-xl-2">
+                            <div class="audience-tile">
+                                <div class="audience-icon" aria-hidden="true"><i class="bi {{ $icon }}"></i></div>
+                                <h3 class="mb-0" style="font-size:0.98rem;">{{ $label }}</h3>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="how-it-works">
+            <div class="container">
+                <div class="text-center">
+                    <h2 class="section-title">How it works</h2>
+                    <p class="section-lead">From first call to first sale—without slowing down your shop floor.</p>
+                </div>
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <article class="step-card">
+                            <div class="step-num" aria-hidden="true">1</div>
+                            <h3>Sign up or request a demo</h3>
+                            <p>Tell us about your store and we will show Coditium POS in action.</p>
+                        </article>
+                    </div>
+                    <div class="col-md-4">
+                        <article class="step-card">
+                            <div class="step-num" aria-hidden="true">2</div>
+                            <h3>We set up your products and branches</h3>
+                            <p>Import catalog, configure branches, and prepare your team to go live.</p>
+                        </article>
+                    </div>
+                    <div class="col-md-4">
+                        <article class="step-card">
+                            <div class="step-num" aria-hidden="true">3</div>
+                            <h3>Start selling and track growth</h3>
+                            <p>Bill customers, watch inventory, and follow sales from day one.</p>
+                        </article>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section section-muted" id="screenshots" aria-labelledby="screenshots-heading">
+            <div class="container">
+                <div class="text-center">
+                    <h2 class="section-title" id="screenshots-heading">See Coditium POS</h2>
+                    <p class="section-lead">Product screenshots coming soon.</p>
+                </div>
+                {{-- TODO: replace with real product screenshots --}}
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="shot-card">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360'%3E%3Crect fill='%23e2e8f0' width='100%25' height='100%25'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-family='sans-serif' font-size='22'%3EPOS screen placeholder%3C/text%3E%3C/svg%3E" alt="Placeholder for Coditium POS sales screen screenshot">
+                            <span class="mt-2 d-block">Sales screen (TODO)</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="shot-card">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360'%3E%3Crect fill='%23e2e8f0' width='100%25' height='100%25'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-family='sans-serif' font-size='22'%3EInventory placeholder%3C/text%3E%3C/svg%3E" alt="Placeholder for Coditium POS inventory screenshot">
+                            <span class="mt-2 d-block">Inventory (TODO)</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="shot-card">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360'%3E%3Crect fill='%23e2e8f0' width='100%25' height='100%25'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-family='sans-serif' font-size='22'%3EReports placeholder%3C/text%3E%3C/svg%3E" alt="Placeholder for Coditium POS reports screenshot">
+                            <span class="mt-2 d-block">Reports (TODO)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="testimonials" aria-labelledby="testimonials-heading">
+            <div class="container">
+                <div class="text-center">
+                    <h2 class="section-title" id="testimonials-heading">What customers say</h2>
+                    <p class="section-lead">Real stories will appear here once confirmed.</p>
+                </div>
+                {{-- TODO: replace with real customer testimonials --}}
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <blockquote class="quote-card">
+                            <p class="mb-0">“TODO: Add a short customer quote about billing speed or inventory control.”</p>
+                            <strong>Customer name · Business type</strong>
+                        </blockquote>
+                    </div>
+                    <div class="col-md-4">
+                        <blockquote class="quote-card">
+                            <p class="mb-0">“TODO: Add a short customer quote about multi-branch or reporting.”</p>
+                            <strong>Customer name · Business type</strong>
+                        </blockquote>
+                    </div>
+                    <div class="col-md-4">
+                        <blockquote class="quote-card">
+                            <p class="mb-0">“TODO: Add a short customer quote about support or onboarding.”</p>
+                            <strong>Customer name · Business type</strong>
+                        </blockquote>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section section-muted" id="faq">
+            <div class="container">
+                <div class="text-center">
+                    <h2 class="section-title">FAQ</h2>
+                    <p class="section-lead">Quick answers to common questions. Confirm details with the Coditium team before publishing.</p>
+                </div>
+                {{-- TODO: confirm FAQ answers with Coditium --}}
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="accordion" id="faqAccordion">
+                            <div class="accordion-item">
+                                <h3 class="accordion-header" id="faqOneHeading">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faqOne" aria-expanded="true" aria-controls="faqOne">
+                                        What hardware do I need?
+                                    </button>
+                                </h3>
+                                <div id="faqOne" class="accordion-collapse collapse show" aria-labelledby="faqOneHeading" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        A computer or tablet with a browser is enough to start. Optional barcode scanners, receipt printers, and cash drawers are supported. <!-- TODO: confirm FAQ answers with Coditium -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h3 class="accordion-header" id="faqTwoHeading">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqTwo" aria-expanded="false" aria-controls="faqTwo">
+                                        Does it work offline?
+                                    </button>
+                                </h3>
+                                <div id="faqTwo" class="accordion-collapse collapse" aria-labelledby="faqTwoHeading" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Coditium POS is designed to keep your counter moving when connectivity dips, then sync when you are back online. <!-- TODO: confirm FAQ answers with Coditium -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h3 class="accordion-header" id="faqThreeHeading">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqThree" aria-expanded="false" aria-controls="faqThree">
+                                        Can you migrate my existing data?
+                                    </button>
+                                </h3>
+                                <div id="faqThree" class="accordion-collapse collapse" aria-labelledby="faqThreeHeading" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Yes—products, customers, and stock can usually be imported during setup. Share a sample export and we will confirm the best path. <!-- TODO: confirm FAQ answers with Coditium -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h3 class="accordion-header" id="faqFourHeading">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqFour" aria-expanded="false" aria-controls="faqFour">
+                                        Do you provide training and support?
+                                    </button>
+                                </h3>
+                                <div id="faqFour" class="accordion-collapse collapse" aria-labelledby="faqFourHeading" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Local onboarding and ongoing support are available so your team can bill with confidence from day one. <!-- TODO: confirm FAQ answers with Coditium -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h3 class="accordion-header" id="faqFiveHeading">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqFive" aria-expanded="false" aria-controls="faqFive">
+                                        Can I manage multiple branches?
+                                    </button>
+                                </h3>
+                                <div id="faqFive" class="accordion-collapse collapse" aria-labelledby="faqFiveHeading" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Yes. Track stock, sales, and staff permissions across branches from one place. <!-- TODO: confirm FAQ answers with Coditium -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="contact">
+            <div class="container">
+                <div class="cta-banner">
+                    <div class="row align-items-center g-3">
+                        <div class="col-lg-8">
+                            <h2>Ready to simplify your store?</h2>
+                            <p class="mb-2">Book a free demo with Coditium Solutions and see Coditium POS on your counter.</p>
+                            <p class="mb-0">
+                                Cell / WhatsApp:
+                                <a class="contact-link" href="tel:+923335191392">0333-5191392</a>
+                                ·
+                                <a class="contact-link" href="https://www.coditium.com" target="_blank" rel="noopener noreferrer">www.coditium.com</a>
+                            </p>
+                        </div>
+                        <div class="col-lg-4 text-lg-end">
+                            <a class="btn-demo" href="{{ $whatsappDemoUrl }}" target="_blank" rel="noopener noreferrer">
+                                <i class="bi bi-whatsapp" aria-hidden="true"></i>
+                                Book a Free Demo
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <div>© 2026 Coditium Solutions. All rights reserved.</div>
+            <div>
+                <a href="https://www.coditium.com" target="_blank" rel="noopener noreferrer">Coditium Solutions</a>
+            </div>
+        </div>
+    </footer>
+
+    <a class="wa-float" href="{{ $whatsappDemoUrl }}" target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp">
+        <i class="bi bi-whatsapp" aria-hidden="true"></i>
+    </a>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         (function () {
             var btn = document.getElementById('togglePassword');
@@ -557,6 +1023,38 @@
                 icon.className = showing ? 'bi bi-eye' : 'bi bi-eye-slash';
                 btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
             });
+        })();
+
+        (function () {
+            function focusLogin() {
+                var field = document.getElementById('user_name');
+                var card = document.getElementById('login');
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                if (field) {
+                    setTimeout(function () { field.focus(); }, 350);
+                }
+            }
+
+            var navLogin = document.getElementById('navLoginBtn');
+            var startTrial = document.getElementById('startTrialBtn');
+            if (navLogin) {
+                navLogin.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    focusLogin();
+                });
+            }
+            if (startTrial) {
+                startTrial.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    focusLogin();
+                });
+            }
+
+            if (window.location.hash === '#login') {
+                focusLogin();
+            }
         })();
     </script>
 </body>

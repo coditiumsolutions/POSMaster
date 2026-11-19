@@ -13,6 +13,11 @@
 .env
 .env.backup
 .env.production
+.secrets/
+secrets/
+hostinger.ssh.env
+hostinger.ssh.json
+**/hostinger-ssh*
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml

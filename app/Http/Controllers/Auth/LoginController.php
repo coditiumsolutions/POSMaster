@@ -37,18 +37,22 @@ class LoginController extends Controller
             'password' => 'required|string',
         ]);
 
-        $user = User::where('user_name', $request->user_name)
+        $userName = trim((string) $request->input('user_name'));
+        $password = (string) $request->input('password');
+
+        $user = User::whereRaw('LOWER(user_name) = ?', [mb_strtolower($userName)])
             ->where('is_active', true)
             ->first();
 
-        if ($user && $this->passwordMatches($request->password, $user->password_hash)) {
+        if ($user && $this->passwordMatches($password, $user->password_hash)) {
             // Upgrade ASP.NET / legacy SHA-256 hashes to bcrypt after a successful login.
             if (AspNetIdentityPasswordHasher::isAspNetHash($user->password_hash)
                 || AspNetIdentityPasswordHasher::isLegacySha256Hash($user->password_hash)) {
-                $user->password_hash = Hash::make($request->password);
+                $user->password_hash = Hash::make($password);
             }
 
             Auth::login($user);
+            $request->session()->regenerate();
 
             $user->last_login_date = now();
             $user->save();
@@ -58,7 +62,7 @@ class LoginController extends Controller
 
         return back()->withErrors([
             'user_name' => 'Invalid credentials or user is inactive.',
-        ])->withInput($request->only('user_name'));
+        ])->withInput(['user_name' => $userName]);
     }
 
     private function passwordMatches(string $plain, ?string $hashed): bool
