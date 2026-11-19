@@ -34,7 +34,7 @@ class NewSetupController extends Controller
             'project_name' => ['required', 'string', 'max:80'],
             'subdomain' => ['required', 'string', 'max:40', 'regex:/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/'],
             'database_name' => ['required', 'string', 'max:40', 'regex:/^[A-Za-z0-9_]+$/'],
-            'db_password' => ['required', 'string', 'min:8', 'max:64'],
+            'db_password' => ['required', 'string', 'min:10', 'max:64'],
             'admin_username' => ['required', 'string', 'max:50'],
             'admin_password' => ['required', 'string', 'min:6', 'max:64'],
             'confirm_isolated' => ['accepted'],

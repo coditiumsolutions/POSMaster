@@ -138,7 +138,10 @@
         </div>
         <div class="col-md-6">
             <label class="form-label" for="db_password">New database password *</label>
-            <input id="db_password" type="password" name="db_password" class="form-control" required minlength="8" maxlength="64" autocomplete="new-password">
+            <input id="db_password" type="password" name="db_password" class="form-control" required minlength="10" maxlength="64" autocomplete="new-password">
+            <div class="form-text">
+                Min 10 chars with upper, lower, number, and symbol. Avoid common/leaked passwords (Hostinger will reject them).
+            </div>
         </div>
         <div class="col-md-6">
             <label class="form-label" for="admin_username">First admin username *</label>

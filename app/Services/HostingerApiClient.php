@@ -297,6 +297,21 @@ class HostingerApiClient
     }
 
     /**
+     * Permanently delete a website (used to roll back failed New Setup attempts).
+     *
+     * @return array<string,mixed>
+     */
+    public function deleteWebsite(string $domain): array
+    {
+        return $this->call(
+            'hosting_websites_delete',
+            ['domain' => $domain],
+            'DELETE',
+            '/api/hosting/v1/websites/' . rawurlencode($domain)
+        );
+    }
+
+    /**
      * @param  array<string,mixed>  $mcpParams
      * @param  array<string,mixed>  $query
      * @param  array<string,mixed>|null  $body
@@ -385,9 +400,11 @@ class HostingerApiClient
             ->timeout(180)
             ->withHeaders(['Content-Type' => 'application/json']);
 
-        $response = $method === 'get'
-            ? $pending->get($url, $query)
-            : $pending->post($url, $body ?? []);
+        $response = match ($method) {
+            'get' => $pending->get($url, $query),
+            'delete' => $pending->delete($url, $query),
+            default => $pending->post($url, $body ?? []),
+        };
 
         if ($response->status() === 401 || $response->status() === 403) {
             throw new RuntimeException('Hostinger API authentication failed. Check NEW_SETUP_HOSTINGER_API_TOKEN.');

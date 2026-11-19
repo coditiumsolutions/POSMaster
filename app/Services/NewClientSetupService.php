@@ -326,6 +326,8 @@ class NewClientSetupService
         $adminPassword = (string) $input['admin_password'];
 
         $this->validateNames($subdomain, $dbNameShort, $projectName, $adminUser);
+        // Validate DB password BEFORE creating the Hostinger website (Hostinger rejects leaked passwords with 422)
+        $this->validateHostingerDbPassword($dbPassword);
 
         $baseDomain = (string) config('new_setup.base_domain', 'coditium.com');
         $fullDomain = $subdomain . '.' . $baseDomain;
@@ -341,35 +343,52 @@ class NewClientSetupService
         }
 
         $steps = [];
+        $createdWebsiteThisRun = false;
 
-        // 1) Website
+        try {
+        // 1) Website — create new, or resume an incomplete empty shell from a previous failed attempt
         if ($api->websiteExists($fullDomain)) {
-            throw new RuntimeException("Hostinger website already exists: {$fullDomain}");
+            if ($this->isCompleteHostingerPosSite($domainRoot)) {
+                throw new RuntimeException(
+                    "Hostinger website already exists and looks fully deployed: {$fullDomain}. Choose another subdomain."
+                );
+            }
+            $steps[] = "Resuming incomplete Hostinger website {$fullDomain} (empty shell from a previous attempt)…";
+            $api->waitForWebsiteReady($fullDomain);
+            $steps[] = "Website ready: https://{$fullDomain}";
+        } else {
+            $steps[] = "Creating Hostinger website {$fullDomain}…";
+            $api->startWebsiteSetup($orderId, $fullDomain);
+            $createdWebsiteThisRun = true;
+            $steps[] = 'Website setup started; waiting until ready…';
+            $api->waitForWebsiteReady($fullDomain);
+            $steps[] = "Website ready: https://{$fullDomain}";
         }
-        $steps[] = "Creating Hostinger website {$fullDomain}…";
-        $api->startWebsiteSetup($orderId, $fullDomain);
-        $steps[] = 'Website setup started; waiting until ready…';
-        $api->waitForWebsiteReady($fullDomain);
-        $steps[] = "Website ready: https://{$fullDomain}";
 
         // 2) Database
         $prefixedGuess = $username . '_' . $dbNameShort;
+        $fullDbName = $prefixedGuess;
+        $fullDbUser = $username . '_' . $dbUserShort;
         if ($api->databaseExists($username, $prefixedGuess) || $api->databaseExists($username, $dbNameShort)) {
-            throw new RuntimeException("Database already exists for name: {$dbNameShort}");
-        }
-        $steps[] = 'Creating MySQL database on Hostinger…';
-        $api->createDatabase($username, $dbNameShort, $dbUserShort, $dbPassword, $fullDomain);
-        $fullDbName = $api->resolveFullDatabaseName($username, $dbNameShort);
-        $fullDbUser = $api->resolveFullDatabaseName($username, $dbUserShort);
-        // Hostinger prefixes user the same way as DB name
-        if (!$api->databaseExists($username, $fullDbName)) {
-            // resolveFullDatabaseName already checked; keep prefixed guess
-            $fullDbName = $prefixedGuess;
+            $fullDbName = $api->resolveFullDatabaseName($username, $dbNameShort);
             $fullDbUser = $username . '_' . $dbUserShort;
+            $steps[] = "Reusing existing database: {$fullDbName}";
         } else {
+            $steps[] = 'Creating MySQL database on Hostinger…';
+            try {
+                $api->createDatabase($username, $dbNameShort, $dbUserShort, $dbPassword, $fullDomain);
+            } catch (Throwable $e) {
+                // Roll back empty website so the same subdomain can be retried cleanly
+                throw $e;
+            }
+            $fullDbName = $api->resolveFullDatabaseName($username, $dbNameShort);
             $fullDbUser = $username . '_' . $dbUserShort;
+            if (!$api->databaseExists($username, $fullDbName)) {
+                $fullDbName = $prefixedGuess;
+                $fullDbUser = $username . '_' . $dbUserShort;
+            }
+            $steps[] = "Database created: {$fullDbName}";
         }
-        $steps[] = "Database created: {$fullDbName}";
 
         try {
             $api->allowRemoteDatabaseAccess($username, $fullDbName, '%');
@@ -483,6 +502,89 @@ class NewClientSetupService
                 'SSL is usually issued automatically by Hostinger for the new addon domain.',
             ],
         ];
+        } catch (Throwable $e) {
+            // If this run (or an incomplete prior shell) never got a working POS, remove the empty website
+            // so the same subdomain can be used again without "already exists".
+            $shouldRollback = $createdWebsiteThisRun || !$this->isCompleteHostingerPosSite($domainRoot);
+            if ($shouldRollback && $api->websiteExists($fullDomain) && !$this->isCompleteHostingerPosSite($domainRoot)) {
+                try {
+                    $api->deleteWebsite($fullDomain);
+                } catch (Throwable $rollbackError) {
+                    throw new RuntimeException(
+                        $e->getMessage()
+                        . ' Also failed to remove empty website '
+                        . $fullDomain
+                        . ': '
+                        . $rollbackError->getMessage()
+                        . ' Delete it in hPanel, then retry.'
+                    );
+                }
+            }
+
+            $extra = $shouldRollback
+                ? ' The empty Hostinger website was removed so you can retry the same subdomain with a stronger DB password.'
+                : '';
+            throw new RuntimeException($e->getMessage() . $extra, 0, $e);
+        }
+    }
+
+    /**
+     * Hostinger rejects weak/leaked DB passwords with HTTP 422 after the website is already created.
+     * Validate up-front so we do not leave orphan empty domains.
+     */
+    protected function validateHostingerDbPassword(string $password): void
+    {
+        if (strlen($password) < 10) {
+            throw new RuntimeException('Database password must be at least 10 characters.');
+        }
+        if (!preg_match('/[a-z]/', $password) || !preg_match('/[A-Z]/', $password) || !preg_match('/[0-9]/', $password)) {
+            throw new RuntimeException(
+                'Database password must include uppercase, lowercase, and a number (Hostinger requirement).'
+            );
+        }
+        if (!preg_match('/[^A-Za-z0-9]/', $password)) {
+            throw new RuntimeException('Database password must include at least one symbol (e.g. ! @ # $).');
+        }
+
+        // Have I Been Pwned k-anonymity check (same class of filter Hostinger uses)
+        try {
+            $sha1 = strtoupper(sha1($password));
+            $prefix = substr($sha1, 0, 5);
+            $suffix = substr($sha1, 5);
+            $response = \Illuminate\Support\Facades\Http::timeout(8)
+                ->withHeaders(['Add-Padding' => 'true'])
+                ->get('https://api.pwnedpasswords.com/range/' . $prefix);
+            if ($response->successful()) {
+                foreach (preg_split('/\R/', (string) $response->body()) ?: [] as $line) {
+                    $parts = explode(':', trim($line));
+                    if (isset($parts[0]) && strtoupper($parts[0]) === $suffix) {
+                        throw new RuntimeException(
+                            'That database password has appeared in a data leak. Choose a different, unique password.'
+                        );
+                    }
+                }
+            }
+        } catch (RuntimeException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            // If the breach API is unreachable, continue — Hostinger will still enforce server-side.
+        }
+    }
+
+    /**
+     * True when POS files are present (not just Hostinger's default Coming Soon page).
+     */
+    protected function isCompleteHostingerPosSite(string $domainRoot): bool
+    {
+        if (is_file($domainRoot . '/artisan') && is_file($domainRoot . '/.env')) {
+            return true;
+        }
+        // Symlinked layout
+        if (is_file($domainRoot . '/public/index.php') && is_file($domainRoot . '/artisan')) {
+            return true;
+        }
+
+        return false;
     }
 
     protected function hostingerDeployCode(
