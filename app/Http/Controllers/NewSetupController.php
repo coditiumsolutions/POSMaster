@@ -4,25 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Services\AppRoles;
 use App\Services\NewClientSetupService;
-use App\Services\PleskApiClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Throwable;
 
 class NewSetupController extends Controller
 {
-    public function create()
+    public function create(NewClientSetupService $service)
     {
         $user = Auth::user();
         if (!$user || !$user->hasRole(AppRoles::Software)) {
             abort(403);
         }
 
-        $configured = $this->pleskClient()->configured()
-            && (bool) config('new_setup.enabled');
-
         return view('setup.new', [
-            'configured' => $configured,
+            'configured' => $service->isConfigured(),
+            'provider' => $service->provider(),
             'baseDomain' => (string) config('new_setup.base_domain'),
             'result' => session('new_setup_result'),
         ]);
@@ -67,14 +64,5 @@ class NewSetupController extends Controller
             ->route('setup.new')
             ->with('new_setup_result', $result)
             ->with('success', 'New project created successfully.');
-    }
-
-    protected function pleskClient(): PleskApiClient
-    {
-        return new PleskApiClient(
-            (string) config('new_setup.plesk_url'),
-            (string) config('new_setup.plesk_user'),
-            (string) config('new_setup.plesk_password'),
-        );
     }
 }

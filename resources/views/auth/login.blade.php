@@ -73,82 +73,98 @@
             position: sticky;
             top: 0;
             z-index: 1030;
-            background: var(--mustard);
-            border-bottom: 1px solid var(--mustard-deep);
-            box-shadow: 0 8px 20px rgba(184, 134, 11, 0.28);
+            background: var(--navy-deep);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 10px 28px rgba(7, 21, 40, 0.35);
+            padding-top: 0.1rem;
+            padding-bottom: 0.1rem;
+            --bs-navbar-padding-y: 0.25rem;
+            min-height: 0;
         }
 
         .site-nav .navbar-brand {
             font-family: var(--font-display);
-            font-weight: 800;
-            color: var(--navy-deep);
+            font-weight: 400;
+            color: #fff;
             letter-spacing: -0.02em;
             display: inline-flex;
             align-items: center;
-            gap: 0.55rem;
+            gap: 0.45rem;
+            font-size: 1rem;
+            padding-top: 0.2rem;
+            padding-bottom: 0.2rem;
         }
 
+        .site-nav .navbar-brand:hover { color: #fff; }
+
         .brand-mark {
-            width: 2.15rem;
-            height: 2.15rem;
-            border-radius: 0.65rem;
+            width: 1.75rem;
+            height: 1.75rem;
+            border-radius: 0.5rem;
             display: grid;
             place-items: center;
-            color: #fff;
-            background: linear-gradient(135deg, var(--navy) 0%, var(--royal) 100%);
-            font-size: 1.05rem;
+            color: var(--navy-deep);
+            background: linear-gradient(135deg, var(--mustard) 0%, #f0c84a 100%);
+            font-size: 0.9rem;
             flex: 0 0 auto;
         }
 
         .site-nav .nav-link {
-            color: #3b2f0b;
-            font-weight: 600;
-            font-size: 0.92rem;
-            padding: 0.45rem 0.7rem !important;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 400;
+            font-size: 0.9rem;
+            padding: 0.28rem 0.55rem !important;
         }
 
-        .site-nav .nav-link:hover { color: var(--navy-deep); }
+        .site-nav .nav-link:hover { color: var(--mustard); }
 
         .site-nav .navbar-toggler {
-            border-color: rgba(11, 31, 58, 0.35);
+            border-color: rgba(255, 255, 255, 0.45);
+            padding: 0.25rem 0.45rem;
         }
 
         .site-nav .navbar-toggler-icon {
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(11, 31, 58, 0.9)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+            width: 1.1rem;
+            height: 1.1rem;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.92)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
         }
 
         .btn-nav-login {
-            border: 1px solid rgba(11, 31, 58, 0.28);
-            background: #fff8e1;
-            color: var(--navy-deep);
-            font-weight: 700;
-            border-radius: 0.75rem;
-            padding: 0.45rem 0.95rem;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: transparent;
+            color: #fff;
+            font-weight: 400;
+            border-radius: 0.6rem;
+            padding: 0.28rem 0.75rem;
+            font-size: 0.88rem;
+            line-height: 1.2;
         }
 
         .btn-nav-login:hover {
-            background: #fff;
-            color: var(--navy);
-            border-color: rgba(11, 31, 58, 0.45);
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.55);
         }
 
         .btn-demo {
-            background: linear-gradient(135deg, var(--royal) 0%, var(--cyan) 100%);
-            color: #fff !important;
-            font-weight: 700;
+            background: linear-gradient(135deg, var(--mustard) 0%, #e8b923 100%);
+            color: var(--navy-deep) !important;
+            font-weight: 400;
             border: 0;
-            border-radius: 0.75rem;
-            padding: 0.5rem 1rem;
-            box-shadow: 0 8px 18px rgba(29, 78, 216, 0.22);
+            border-radius: 0.6rem;
+            padding: 0.3rem 0.85rem;
+            font-size: 0.88rem;
+            line-height: 1.2;
+            box-shadow: 0 6px 14px rgba(212, 160, 23, 0.24);
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 0.35rem;
+            gap: 0.3rem;
         }
 
         .btn-demo:hover {
-            filter: saturate(1.05);
-            color: #fff !important;
+            filter: saturate(1.08) brightness(1.03);
+            color: var(--navy-deep) !important;
             transform: translateY(-1px);
         }
 
@@ -184,25 +200,41 @@
             inset: 0;
             z-index: -1;
             background:
-                linear-gradient(120deg, rgba(255, 248, 225, 0.88) 0%, rgba(255, 255, 255, 0.82) 48%, rgba(11, 31, 58, 0.35) 100%),
+                linear-gradient(115deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.55) 38%, rgba(255, 255, 255, 0.18) 68%, rgba(11, 31, 58, 0.22) 100%),
                 url("https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1920&q=80") center / cover no-repeat;
+        }
+
+        .hero-copy {
+            position: relative;
+            max-width: 36rem;
+            padding: clamp(1.15rem, 2.4vw, 1.75rem) clamp(1.15rem, 2.6vw, 1.9rem);
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 0.35rem;
+            box-shadow: none;
+            border: 0;
         }
 
         .hero-copy h1 {
             font-family: var(--font-display);
-            font-size: clamp(2rem, 4.2vw, 3.15rem);
+            font-size: clamp(2.15rem, 4.4vw, 3.35rem);
             font-weight: 800;
-            letter-spacing: -0.03em;
-            line-height: 1.12;
-            color: var(--navy);
+            letter-spacing: -0.025em;
+            line-height: 1.18;
+            color: #04101f;
             margin: 0 0 1rem;
+            max-width: 18ch;
+            text-wrap: balance;
+            text-shadow: none;
         }
 
         .hero-copy .lead {
-            font-size: clamp(1.02rem, 1.5vw, 1.18rem);
-            color: #475569;
-            max-width: 36rem;
+            font-size: clamp(1.05rem, 1.55vw, 1.22rem);
+            color: #0f172a;
+            max-width: 34rem;
             margin-bottom: 1.5rem;
+            line-height: 1.55;
+            font-weight: 500;
+            text-shadow: none;
         }
 
         .hero-actions {

@@ -4,7 +4,10 @@
 <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
     <div>
         <h1 class="h3 page-heading invoice-details-heading mb-1">New Setup</h1>
-        <p class="text-muted mb-0">Create a separate software copy and blank database for another customer. LipSip data is never changed.</p>
+        <p class="text-muted mb-0">
+            Create a separate POS copy and blank database on Hostinger for another customer.
+            The live POSMaster project is never changed.
+        </p>
     </div>
     <a href="{{ route('setup.index') }}" class="btn btn-outline-secondary btn-sm">Back to Setup</a>
 </div>
@@ -26,8 +29,19 @@
 
 @if(!$configured)
     <div class="alert alert-warning">
-        New Setup is not fully configured on this server yet.
-        Software must set <code>NEW_SETUP_PLESK_USER</code> and <code>NEW_SETUP_PLESK_PASSWORD</code> in the live <code>.env</code>.
+        New Setup is not fully configured yet.
+        @if(($provider ?? 'hostinger') === 'hostinger')
+            Set Hostinger SSH key path and either
+            <code>NEW_SETUP_HOSTINGER_API_TOKEN</code> (or <code>.secrets/hostinger-api.token</code>)
+            or keep the Cursor Hostinger MCP bridge running. See <code>.secrets/hostinger-ssh.env</code>.
+        @else
+            Software must set <code>NEW_SETUP_PLESK_USER</code> and <code>NEW_SETUP_PLESK_PASSWORD</code> in <code>.env</code>.
+        @endif
+    </div>
+@else
+    <div class="alert alert-info py-2 small">
+        Provider: <strong>{{ strtoupper($provider ?? 'hostinger') }}</strong>
+        — creates website + MySQL database, then deploys POSMaster over SSH.
     </div>
 @endif
 
@@ -37,11 +51,21 @@
         <div class="row g-2 small">
             <div class="col-md-6"><strong>Project:</strong> {{ $result['project_name'] }}</div>
             <div class="col-md-6"><strong>URL:</strong> <a href="{{ $result['url'] }}" target="_blank" rel="noopener">{{ $result['url'] }}</a></div>
-            <div class="col-md-6"><strong>Folder:</strong> {{ $result['folder'] }}</div>
+            <div class="col-md-6"><strong>Folder:</strong> {{ $result['folder'] ?? $result['target_root'] ?? '—' }}</div>
             <div class="col-md-6"><strong>Database:</strong> {{ $result['database'] }}</div>
             <div class="col-md-6"><strong>DB user:</strong> {{ $result['db_user'] }}</div>
             <div class="col-md-6"><strong>Admin login:</strong> {{ $result['admin_username'] }}</div>
         </div>
+        @if(!empty($result['steps']))
+            <details class="small mt-2">
+                <summary>Provisioning steps</summary>
+                <ol class="mb-0 mt-1">
+                    @foreach($result['steps'] as $step)
+                        <li>{{ $step }}</li>
+                    @endforeach
+                </ol>
+            </details>
+        @endif
         @if(!empty($result['notes']))
             <ul class="small mb-0 mt-2">
                 @foreach($result['notes'] as $note)
@@ -69,14 +93,14 @@
                        pattern="[a-z0-9]([a-z0-9-]*[a-z0-9])?" style="text-transform:lowercase;">
                 <span class="input-group-text">.{{ $baseDomain }}</span>
             </div>
-            <div class="form-text">Creates site + folder <code>{subdomain}.{{ $baseDomain }}</code>.</div>
+            <div class="form-text">Creates Hostinger site <code>{subdomain}.{{ $baseDomain }}</code>.</div>
         </div>
         <div class="col-md-6">
             <label class="form-label" for="database_name">Database name *</label>
             <input id="database_name" type="text" name="database_name" class="form-control"
                    value="{{ old('database_name') }}" placeholder="e.g. pos_alnoor" required maxlength="40"
                    pattern="[A-Za-z0-9_]+">
-            <div class="form-text">Must be different from the live LipSip database.</div>
+            <div class="form-text">Hostinger will prefix with the account username automatically.</div>
         </div>
         <div class="col-md-6">
             <label class="form-label" for="db_password">New database password *</label>
@@ -95,7 +119,7 @@
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" value="1" id="confirm_isolated" name="confirm_isolated" required>
                 <label class="form-check-label" for="confirm_isolated">
-                    I understand this creates a <strong>separate</strong> copy and will <strong>not</strong> change the current LipSip project or database.
+                    I understand this creates a <strong>separate</strong> copy and will <strong>not</strong> change the current live project or database.
                 </label>
             </div>
         </div>
@@ -103,7 +127,7 @@
             <button type="submit" class="btn btn-primary" @disabled(!$configured) id="newSetupSubmit">
                 Create New Project
             </button>
-            <span class="small text-muted align-self-center">This can take a few minutes (file copy).</span>
+            <span class="small text-muted align-self-center">This can take several minutes (website + git + schema).</span>
         </div>
     </div>
 </form>
