@@ -185,7 +185,7 @@ class NavigationCatalog
                     Route::has('setup.system')
                         ? self::link('System Setup', 'SystemSetup', 'edit', ['icon' => 'bi-gear-wide-connected', 'route' => 'setup.system'])
                         : null,
-                    Route::has('setup.new')
+                    (Route::has('setup.new') && config('new_setup.enabled'))
                         ? self::link('New Setup', 'NewSetup', 'create', ['icon' => 'bi-copy', 'route' => 'setup.new'])
                         : null,
                     self::link('Users', 'Users', 'index', ['icon' => 'bi-person-gear', 'route' => 'users.index']),

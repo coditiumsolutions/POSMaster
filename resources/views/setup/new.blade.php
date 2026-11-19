@@ -32,10 +32,10 @@
         New Setup is not fully configured yet.
         {{ $configurationHint ?? 'Ask Software to finish Hostinger New Setup configuration.' }}
     </div>
-    @if(($provider ?? 'hostinger') === 'hostinger')
+    @if(!empty($showHostingerTokenForm) && ($provider ?? 'hostinger') === 'hostinger')
         <form method="POST" action="{{ route('setup.new.hostinger-token') }}" class="border rounded p-3 mb-4 bg-white">
             @csrf
-            <label class="form-label" for="hostinger_api_token">Hostinger API token</label>
+            <label class="form-label" for="hostinger_api_token">Hostinger API token (master only)</label>
             <div class="input-group">
                 <input id="hostinger_api_token" type="password" name="hostinger_api_token" class="form-control"
                        required minlength="20" maxlength="500" autocomplete="off"
@@ -43,9 +43,9 @@
                 <button type="submit" class="btn btn-outline-primary">Save token</button>
             </div>
             <div class="form-text">
-                Create a token at
+                Only for <strong>posmaster</strong>. Create a token at
                 <a href="https://hpanel.hostinger.com/api" target="_blank" rel="noopener">hpanel.hostinger.com/api</a>
-                (shown only once). It is stored in this site’s <code>.env</code>, not in Git.
+                (shown only once). Stored in this site’s <code>.env</code>, not in Git. Client sites never need this.
             </div>
         </form>
     @endif

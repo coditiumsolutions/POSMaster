@@ -17,6 +17,7 @@
             </div>
         </a>
     </div>
+    @if(config('new_setup.enabled'))
     <div class="col-12 col-md-6 col-lg-4">
         <a class="text-decoration-none" href="{{ route('setup.new') }}">
             <div class="metric-card h-100" style="border-color:#fcd34d; background:#fffbeb;">
@@ -28,6 +29,7 @@
             </div>
         </a>
     </div>
+    @endif
 </div>
 
 <div class="row g-3">

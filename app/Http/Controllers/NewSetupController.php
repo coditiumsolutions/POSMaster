@@ -12,10 +12,7 @@ class NewSetupController extends Controller
 {
     public function create(NewClientSetupService $service)
     {
-        $user = Auth::user();
-        if (!$user || !$user->hasRole(AppRoles::Software)) {
-            abort(403);
-        }
+        $this->authorizeMasterSetup();
 
         return view('setup.new', [
             'configured' => $service->isConfigured(),
@@ -23,15 +20,13 @@ class NewSetupController extends Controller
             'configurationHint' => $service->configurationHint(),
             'baseDomain' => (string) config('new_setup.base_domain'),
             'result' => session('new_setup_result'),
+            'showHostingerTokenForm' => $service->needsHostingerApiToken(),
         ]);
     }
 
     public function store(Request $request, NewClientSetupService $service)
     {
-        $user = Auth::user();
-        if (!$user || !$user->hasRole(AppRoles::Software)) {
-            abort(403);
-        }
+        $this->authorizeMasterSetup();
 
         $validated = $request->validate([
             'project_name' => ['required', 'string', 'max:80'],
@@ -69,10 +64,7 @@ class NewSetupController extends Controller
 
     public function storeHostingerToken(Request $request, NewClientSetupService $service)
     {
-        $user = Auth::user();
-        if (!$user || !$user->hasRole(AppRoles::Software)) {
-            abort(403);
-        }
+        $this->authorizeMasterSetup();
 
         if ($service->provider() !== 'hostinger') {
             return back()->withErrors(['token' => 'Hostinger is not the active New Setup provider.']);
@@ -91,5 +83,20 @@ class NewSetupController extends Controller
         return redirect()
             ->route('setup.new')
             ->with('success', 'Hostinger API token saved. New Setup is ready.');
+    }
+
+    /**
+     * New Setup + Hostinger API token UI is master-only (posmaster), never client copies.
+     */
+    protected function authorizeMasterSetup(): void
+    {
+        $user = Auth::user();
+        if (!$user || !$user->hasRole(AppRoles::Software)) {
+            abort(403);
+        }
+
+        if (!config('new_setup.enabled')) {
+            abort(404, 'New Setup is only available on the master POSMaster site.');
+        }
     }
 }

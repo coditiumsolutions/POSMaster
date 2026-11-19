@@ -81,6 +81,10 @@ class NewClientSetupService
      */
     public function saveHostingerApiToken(string $token): void
     {
+        if (!config('new_setup.enabled')) {
+            throw new RuntimeException('Hostinger API token can only be saved on the master POSMaster site.');
+        }
+
         $token = trim($token);
         if (strlen($token) < 20) {
             throw new RuntimeException('API token looks too short.');
@@ -396,8 +400,13 @@ class NewClientSetupService
             'DB_DATABASE' => $fullDbName,
             'DB_USERNAME' => $fullDbUser,
             'DB_PASSWORD' => $dbPassword,
+            // Client copies are never the master New Setup host
             'NEW_SETUP_ENABLED' => 'false',
+            'NEW_SETUP_PROVIDER' => 'hostinger',
             'NEW_SETUP_HOSTINGER_API_TOKEN' => '',
+            'NEW_SETUP_HOSTINGER_LOCAL' => 'false',
+            'NEW_SETUP_HOSTINGER_MCP_BRIDGE' => 'false',
+            'NEW_SETUP_HOSTINGER_SSH_KEY' => '',
             'NEW_SETUP_PLESK_PASSWORD' => '',
             'NEW_SETUP_FTP_PASSWORD' => '',
         ]);
@@ -650,7 +659,17 @@ BASH;
             $lines = [];
         }
 
-        $map = $overrides;
+        // Never copy master provisioning secrets into client site .env
+        $masterOnlyDefaults = [
+            'NEW_SETUP_ENABLED' => 'false',
+            'NEW_SETUP_HOSTINGER_API_TOKEN' => '',
+            'NEW_SETUP_HOSTINGER_LOCAL' => 'false',
+            'NEW_SETUP_HOSTINGER_MCP_BRIDGE' => 'false',
+            'NEW_SETUP_HOSTINGER_SSH_KEY' => '',
+            'NEW_SETUP_PLESK_PASSWORD' => '',
+            'NEW_SETUP_FTP_PASSWORD' => '',
+        ];
+        $map = array_merge($masterOnlyDefaults, $overrides);
         $out = [];
         $seen = [];
 
