@@ -1,0 +1,109 @@
+@extends('layouts.app')
+
+@section('title', 'Add User')
+
+@section('content')
+<div class="container-fluid">
+    <h1 class="h3 page-heading invoice-details-heading mb-3">Add User</h1>
+
+    @if($errors->any())
+        <div class="alert alert-danger" role="alert">
+            <strong>Could not add this user:</strong>
+            <ul class="mb-0 mt-1">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <div class="bg-white border rounded p-3">
+        <form method="POST" action="{{ route('users.store') }}">
+            @csrf
+            <div class="invoice-meta-grid invoice-meta-form">
+                <div class="invoice-meta-row">
+                    <label class="invoice-meta-title" for="user_name">Username *</label>
+                    <div class="invoice-meta-field">
+                        <input id="user_name" type="text" name="user_name"
+                               class="form-control form-control-sm invoice-meta-input {{ $errors->has('user_name') ? 'is-invalid' : '' }}"
+                               value="{{ old('user_name') }}" required maxlength="100" autocomplete="off">
+                        @error('user_name')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    </div>
+                    <label class="invoice-meta-title" for="full_name">Full Name *</label>
+                    <div class="invoice-meta-field">
+                        <input id="full_name" type="text" name="full_name"
+                               class="form-control form-control-sm invoice-meta-input {{ $errors->has('full_name') ? 'is-invalid' : '' }}"
+                               value="{{ old('full_name') }}" required maxlength="200">
+                        @error('full_name')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+                <div class="invoice-meta-row">
+                    <label class="invoice-meta-title" for="password">Password *</label>
+                    <div class="invoice-meta-field">
+                        <input id="password" type="password" name="password"
+                               class="form-control form-control-sm invoice-meta-input {{ $errors->has('password') ? 'is-invalid' : '' }}"
+                               required minlength="6" maxlength="100" autocomplete="new-password">
+                        @error('password')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    </div>
+                    <label class="invoice-meta-title">Roles *</label>
+                    <div class="invoice-meta-field">
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach($roles as $role)
+                                <label class="form-check-label d-flex align-items-center gap-1 mb-0 small">
+                                    <input type="checkbox" class="form-check-input" name="roles[]" value="{{ $role }}"
+                                           @checked(in_array($role, $selectedRoles ?? [], true))>
+                                    {{ $roleLabels[$role] ?? $role }}
+                                </label>
+                            @endforeach
+                        </div>
+                        @error('roles')<div class="text-danger small">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+                <div class="invoice-meta-row">
+                    <label class="invoice-meta-title" for="branch">Branch</label>
+                    <div class="invoice-meta-field">
+                        <select id="branch" name="branch"
+                                class="form-select form-select-sm invoice-meta-input {{ $errors->has('branch') ? 'is-invalid' : '' }}">
+                            <option value="">Select branch</option>
+                            @foreach($branches as $branch)
+                                <option value="{{ $branch->branch_name }}" @selected(old('branch') === $branch->branch_name)>
+                                    {{ $branch->branch_name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('branch')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    </div>
+                    <label class="invoice-meta-title" for="terminal_name">Terminal</label>
+                    <div class="invoice-meta-field">
+                        <input id="terminal_name" type="text" name="terminal_name"
+                               class="form-control form-control-sm invoice-meta-input {{ $errors->has('terminal_name') ? 'is-invalid' : '' }}"
+                               value="{{ old('terminal_name') }}" maxlength="100">
+                        @error('terminal_name')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+                <div class="invoice-meta-row">
+                    <label class="invoice-meta-title" for="mobile_no">Mobile</label>
+                    <div class="invoice-meta-field">
+                        <input id="mobile_no" type="text" name="mobile_no"
+                               class="form-control form-control-sm invoice-meta-input {{ $errors->has('mobile_no') ? 'is-invalid' : '' }}"
+                               value="{{ old('mobile_no') }}" maxlength="30">
+                        @error('mobile_no')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    </div>
+                    <label class="invoice-meta-title" for="email">Email</label>
+                    <div class="invoice-meta-field">
+                        <input id="email" type="email" name="email"
+                               class="form-control form-control-sm invoice-meta-input {{ $errors->has('email') ? 'is-invalid' : '' }}"
+                               value="{{ old('email') }}" maxlength="150">
+                        @error('email')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" name="is_active" value="1">
+            <div class="mt-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Save User</button>
+                <a href="{{ route('users.index') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+@endsection
