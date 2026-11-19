@@ -118,21 +118,26 @@ class HostingerApiClient
     {
         $deadline = time() + $timeoutSeconds;
         $last = 'unknown';
-        $seenInList = false;
+        $seenInListAt = null;
+        $onboardingsUnavailable = false;
 
         while (time() < $deadline) {
             $setups = [];
             try {
                 $setups = $this->listWebsiteSetups($domain);
+                $onboardingsUnavailable = false;
             } catch (RuntimeException $e) {
                 // Fall back to website list polling if onboardings endpoint changes again
+                $onboardingsUnavailable = true;
                 $last = 'onboardings_unavailable';
             }
 
+            $matched = false;
             foreach ($setups as $setup) {
                 if (strcasecmp((string) ($setup['domain'] ?? ''), $domain) !== 0) {
                     continue;
                 }
+                $matched = true;
                 $last = (string) ($setup['status'] ?? '');
                 if ($last === 'completed') {
                     return;
@@ -142,10 +147,11 @@ class HostingerApiClient
                 }
             }
 
+            // Do NOT treat "website listed" as ready — Hostinger lists sites before setup completes.
+            // Only fall back when onboardings has no row left (completed entries can drop) or is down.
             if ($this->websiteExists($domain)) {
-                $seenInList = true;
-                // Setup list can drop entries after completion; accept once listed and not failed.
-                if ($last === 'completed' || $setups === [] || $last === 'onboardings_unavailable' || $last === 'unknown') {
+                $seenInListAt ??= time();
+                if (!$matched && ($setups === [] || $onboardingsUnavailable) && (time() - $seenInListAt) >= 20) {
                     return;
                 }
             }
@@ -153,7 +159,7 @@ class HostingerApiClient
             sleep(12);
         }
 
-        if ($seenInList && $last !== 'failed') {
+        if ($seenInListAt !== null && $last !== 'failed' && ($last === 'completed' || $last === 'onboardings_unavailable')) {
             return;
         }
 

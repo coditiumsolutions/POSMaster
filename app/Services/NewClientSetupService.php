@@ -397,9 +397,9 @@ class NewClientSetupService
             $steps[] = 'Remote DB access skipped: ' . $e->getMessage();
         }
 
-        // 3) Deploy code (API git on Hostinger local mode; SSH git clone from a PC)
+        // 3) Deploy code (local filesystem copy on Hostinger; SSH git clone from a PC)
         $steps[] = $ssh->isLocalMode()
-            ? 'Deploying POSMaster via Hostinger Git API…'
+            ? 'Copying POSMaster files from master site…'
             : 'Deploying POSMaster code over SSH…';
         $this->hostingerDeployCode($api, $ssh, $username, $fullDomain, $domainRoot, $gitRepo, $gitBranch);
         $steps[] = 'Application files deployed.';
@@ -522,7 +522,7 @@ class NewClientSetupService
             }
 
             $extra = $shouldRollback
-                ? ' The empty Hostinger website was removed so you can retry the same subdomain with a stronger DB password.'
+                ? ' The empty Hostinger website was removed so you can retry the same subdomain.'
                 : '';
             throw new RuntimeException($e->getMessage() . $extra, 0, $e);
         }
@@ -597,22 +597,21 @@ class NewClientSetupService
         string $gitBranch
     ): void {
         if ($ssh->isLocalMode()) {
+            // Hostinger Git deploy API often returns 500 on this account; copy from the master
+            // site on the same server instead (proc_open/exec are disabled, so no shell git).
+            @set_time_limit(0);
+            $sourceRoot = base_path();
+            if (!is_file($sourceRoot . DIRECTORY_SEPARATOR . 'artisan')) {
+                throw new RuntimeException('Master POSMaster files not found for local copy deploy.');
+            }
+
             $publicHtml = $domainRoot . '/public_html';
-            // Git deploy requires an empty/missing document root (or the same repo).
-            if (is_dir($publicHtml)) {
+            if (is_dir($publicHtml) || is_link($publicHtml) || is_file($publicHtml)) {
                 $ssh->deletePath($publicHtml);
             }
-            if (!is_dir($publicHtml) && !@mkdir($publicHtml, 0755, true) && !is_dir($publicHtml)) {
-                throw new RuntimeException('Could not recreate public_html for git deploy.');
-            }
 
-            $deploy = $api->deployGitRepository($username, $fullDomain, $gitRepo, $gitBranch, '');
-            if (isset($deploy['is_success']) && $deploy['is_success'] === false) {
-                $log = (string) ($deploy['log'] ?? json_encode($deploy));
-                throw new RuntimeException('Hostinger git deploy failed: ' . $log);
-            }
-
-            $this->restructureLaravelDocumentRoot($domainRoot);
+            $this->copyMasterApplicationTree($sourceRoot, $domainRoot);
+            $this->publishPublicToPublicHtml($domainRoot);
 
             return;
         }
@@ -746,6 +745,129 @@ BASH;
                 if (!@copy($from, $to)) {
                     throw new RuntimeException('Could not copy file: ' . $from);
                 }
+            }
+        }
+    }
+
+    /**
+     * Copy the running master POSMaster tree onto a new Hostinger domain root.
+     * Skips secrets, VCS, and volatile cache/log files. Vendor is copied so composer is not required.
+     */
+    protected function copyMasterApplicationTree(string $sourceRoot, string $domainRoot): void
+    {
+        $sourceRoot = rtrim(str_replace('\\', '/', $sourceRoot), '/');
+        $domainRoot = rtrim(str_replace('\\', '/', $domainRoot), '/');
+        if (!is_dir($domainRoot) && !@mkdir($domainRoot, 0755, true) && !is_dir($domainRoot)) {
+            throw new RuntimeException('Could not create domain root: ' . $domainRoot);
+        }
+
+        $excludeTop = [
+            '.env' => true,
+            '.git' => true,
+            '.secrets' => true,
+            'node_modules' => true,
+            'public_html' => true,
+            '.idea' => true,
+            '.vscode' => true,
+        ];
+
+        $items = scandir($sourceRoot);
+        if ($items === false) {
+            throw new RuntimeException('Could not read master application root.');
+        }
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..' || isset($excludeTop[$item])) {
+                continue;
+            }
+            $from = $sourceRoot . '/' . $item;
+            $to = $domainRoot . '/' . $item;
+            if (is_dir($from)) {
+                if (is_dir($to) || is_file($to) || is_link($to)) {
+                    $this->hostingerSsh()->deletePath($to);
+                }
+                if ($item === 'storage') {
+                    $this->copyStorageSkeleton($from, $to);
+                    continue;
+                }
+                if ($item === 'bootstrap') {
+                    $this->copyBootstrapForDeploy($from, $to);
+                    continue;
+                }
+                $this->copyDirectory($from, $to);
+            } else {
+                if (is_dir($to)) {
+                    $this->hostingerSsh()->deletePath($to);
+                }
+                if (!@copy($from, $to)) {
+                    throw new RuntimeException('Could not copy file: ' . $from);
+                }
+            }
+        }
+
+        $this->hostingerSsh()->ensureDirs([
+            $domainRoot . '/storage/framework/cache',
+            $domainRoot . '/storage/framework/sessions',
+            $domainRoot . '/storage/framework/views',
+            $domainRoot . '/storage/logs',
+            $domainRoot . '/storage/app/public',
+            $domainRoot . '/bootstrap/cache',
+        ]);
+    }
+
+    protected function copyStorageSkeleton(string $src, string $dst): void
+    {
+        if (!is_dir($dst) && !@mkdir($dst, 0755, true) && !is_dir($dst)) {
+            throw new RuntimeException('Could not create storage directory.');
+        }
+        $items = scandir($src);
+        if ($items === false) {
+            return;
+        }
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+            $from = $src . '/' . $item;
+            $to = $dst . '/' . $item;
+            if (!is_dir($from)) {
+                // Keep .gitignore placeholders; skip log/cache payloads
+                if (str_ends_with($item, '.log') || $item === 'laravel.log') {
+                    continue;
+                }
+                if (!@copy($from, $to)) {
+                    throw new RuntimeException('Could not copy storage file: ' . $from);
+                }
+                continue;
+            }
+            // Recreate framework/cache/sessions/views/logs as empty-ish trees
+            if (in_array($item, ['logs', 'cache', 'sessions', 'views'], true)
+                || str_contains($from, '/framework/cache')
+                || str_contains($from, '/framework/sessions')
+                || str_contains($from, '/framework/views')
+                || str_contains($from, '/logs')
+            ) {
+                $this->copyStorageSkeleton($from, $to);
+                continue;
+            }
+            $this->copyDirectory($from, $to);
+        }
+    }
+
+    protected function copyBootstrapForDeploy(string $src, string $dst): void
+    {
+        $this->copyDirectory($src, $dst);
+        $cacheDir = $dst . '/cache';
+        if (!is_dir($cacheDir)) {
+            return;
+        }
+        foreach (scandir($cacheDir) ?: [] as $item) {
+            if ($item === '.' || $item === '..' || $item === '.gitignore') {
+                continue;
+            }
+            $path = $cacheDir . '/' . $item;
+            if (is_file($path)) {
+                @unlink($path);
             }
         }
     }
