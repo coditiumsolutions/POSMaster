@@ -20,7 +20,9 @@ class NewSetupController extends Controller
             'configurationHint' => $service->configurationHint(),
             'baseDomain' => (string) config('new_setup.base_domain'),
             'result' => session('new_setup_result'),
-            'showHostingerTokenForm' => $service->needsHostingerApiToken(),
+            // Master always shows token management (add or replace)
+            'showHostingerTokenForm' => true,
+            'hostingerTokenSaved' => !$service->needsHostingerApiToken(),
         ]);
     }
 

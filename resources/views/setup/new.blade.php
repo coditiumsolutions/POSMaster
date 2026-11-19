@@ -27,32 +27,55 @@
     </div>
 @endif
 
+@if(($provider ?? 'hostinger') === 'hostinger' && !empty($showHostingerTokenForm))
+    <div class="border rounded p-3 mb-4 bg-white">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+            <div class="fw-semibold">Hostinger API token</div>
+            @if(!empty($hostingerTokenSaved))
+                <span class="badge text-bg-success">Saved on this master site</span>
+            @else
+                <span class="badge text-bg-warning">Required</span>
+            @endif
+        </div>
+        @if(!empty($hostingerTokenSaved))
+            <p class="small text-muted mb-2">
+                A token is already stored in this site’s <code>.env</code>. Paste a new one below only if you need to replace it.
+            </p>
+        @endif
+        <form method="POST" action="{{ route('setup.new.hostinger-token') }}">
+            @csrf
+            <label class="form-label" for="hostinger_api_token">
+                {{ !empty($hostingerTokenSaved) ? 'Replace Hostinger API token' : 'Paste Hostinger API token' }}
+            </label>
+            <div class="input-group">
+                <input id="hostinger_api_token" type="password" name="hostinger_api_token" class="form-control"
+                       required minlength="20" maxlength="500" autocomplete="off"
+                       placeholder="Paste token from hPanel → API">
+                <button type="submit" class="btn btn-outline-primary">
+                    {{ !empty($hostingerTokenSaved) ? 'Update token' : 'Save token' }}
+                </button>
+            </div>
+            <div class="form-text">
+                Master only (<code>posmaster.coditium.com</code>). Create a token at
+                <a href="https://hpanel.hostinger.com/api" target="_blank" rel="noopener">hpanel.hostinger.com/api</a>
+                (shown only once). Not used on client sites like medical.
+            </div>
+        </form>
+    </div>
+@endif
+
 @if(!$configured)
     <div class="alert alert-warning">
         New Setup is not fully configured yet.
         {{ $configurationHint ?? 'Ask Software to finish Hostinger New Setup configuration.' }}
     </div>
-    @if(!empty($showHostingerTokenForm) && ($provider ?? 'hostinger') === 'hostinger')
-        <form method="POST" action="{{ route('setup.new.hostinger-token') }}" class="border rounded p-3 mb-4 bg-white">
-            @csrf
-            <label class="form-label" for="hostinger_api_token">Hostinger API token (master only)</label>
-            <div class="input-group">
-                <input id="hostinger_api_token" type="password" name="hostinger_api_token" class="form-control"
-                       required minlength="20" maxlength="500" autocomplete="off"
-                       placeholder="Paste token from hPanel → API">
-                <button type="submit" class="btn btn-outline-primary">Save token</button>
-            </div>
-            <div class="form-text">
-                Only for <strong>posmaster</strong>. Create a token at
-                <a href="https://hpanel.hostinger.com/api" target="_blank" rel="noopener">hpanel.hostinger.com/api</a>
-                (shown only once). Stored in this site’s <code>.env</code>, not in Git. Client sites never need this.
-            </div>
-        </form>
-    @endif
 @else
     <div class="alert alert-info py-2 small">
         Provider: <strong>{{ strtoupper($provider ?? 'hostinger') }}</strong>
         — creates website + MySQL database, then deploys POSMaster code.
+        @if(!empty($hostingerTokenSaved))
+            Hostinger API token is configured.
+        @endif
     </div>
 @endif
 
