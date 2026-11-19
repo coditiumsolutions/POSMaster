@@ -99,11 +99,12 @@ class HostingerApiClient
         if ($domain) {
             $params['domain'] = $domain;
         }
+        // Current Hostinger API: GET /api/hosting/v1/onboardings (not /websites/setups)
         $res = $this->call(
             'hosting_websites_list-setups',
             $params,
             'GET',
-            '/api/hosting/v1/websites/setups',
+            '/api/hosting/v1/onboardings',
             $params
         );
         if (isset($res[0]) || $res === []) {
@@ -120,7 +121,14 @@ class HostingerApiClient
         $seenInList = false;
 
         while (time() < $deadline) {
-            $setups = $this->listWebsiteSetups($domain);
+            $setups = [];
+            try {
+                $setups = $this->listWebsiteSetups($domain);
+            } catch (RuntimeException $e) {
+                // Fall back to website list polling if onboardings endpoint changes again
+                $last = 'onboardings_unavailable';
+            }
+
             foreach ($setups as $setup) {
                 if (strcasecmp((string) ($setup['domain'] ?? ''), $domain) !== 0) {
                     continue;
@@ -137,10 +145,7 @@ class HostingerApiClient
             if ($this->websiteExists($domain)) {
                 $seenInList = true;
                 // Setup list can drop entries after completion; accept once listed and not failed.
-                if ($last === 'completed' || ($setups === [] && $seenInList)) {
-                    return;
-                }
-                if ($last === 'unknown' && $setups === []) {
+                if ($last === 'completed' || $setups === [] || $last === 'onboardings_unavailable' || $last === 'unknown') {
                     return;
                 }
             }
