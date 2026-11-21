@@ -8,6 +8,7 @@
     $currentArea = NavigationCatalog::findArea($navKey);
     $topAreas = NavigationCatalog::topAreas();
     $topNavbarTitle = SystemSettings::topNavbarTitle();
+    $collapseSidebarByDefault = request()->routeIs('pos.*');
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -25,7 +26,7 @@
     <meta http-equiv="Expires" content="0">
     @stack('styles')
 </head>
-<body>
+<body @if($collapseSidebarByDefault) data-pos-collapse-sidebar="1" @endif>
 
 <div class="pos-shell">
     <div class="pos-header-bars no-print">
@@ -88,11 +89,13 @@
     </div>
 
     <div class="pos-body">
-        <aside class="pos-sidebar" id="posSidebar">
+        <aside class="pos-sidebar{{ $collapseSidebarByDefault ? ' collapsed' : '' }}" id="posSidebar">
             <div class="pos-sidebar-toggle-row">
                 <button type="button" class="pos-sidebar-toggle" id="posSidebarToggle"
-                        aria-label="Collapse sidebar" title="Collapse sidebar" aria-expanded="true">
-                    <i class="bi bi-list" aria-hidden="true"></i>
+                        aria-label="{{ $collapseSidebarByDefault ? 'Expand sidebar' : 'Collapse sidebar' }}"
+                        title="{{ $collapseSidebarByDefault ? 'Expand sidebar' : 'Collapse sidebar' }}"
+                        aria-expanded="{{ $collapseSidebarByDefault ? 'false' : 'true' }}">
+                    <i class="bi {{ $collapseSidebarByDefault ? 'bi-chevron-right' : 'bi-list' }}" aria-hidden="true"></i>
                 </button>
             </div>
             <nav class="pos-nav" id="posSidebarNav">

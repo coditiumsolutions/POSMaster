@@ -16,9 +16,11 @@
   }
 
   if (sidebar && toggle) {
+    var forceCollapsed = document.body && document.body.getAttribute("data-pos-collapse-sidebar") === "1";
     var saved = false;
     try { saved = localStorage.getItem(storageKey) === "1"; } catch (e) { saved = false; }
-    setCollapsed(saved);
+    // POS sale screens start collapsed so the catalog has full width.
+    setCollapsed(forceCollapsed ? true : saved);
     toggle.addEventListener("click", function () {
       setCollapsed(!sidebar.classList.contains("collapsed"));
     });
