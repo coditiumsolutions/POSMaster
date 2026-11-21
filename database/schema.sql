@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `description` varchar(500) DEFAULT NULL,
   `image_path` varchar(500) DEFAULT NULL,
+  `image_name` varchar(255) DEFAULT NULL,
   `created_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_date` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`uid`),

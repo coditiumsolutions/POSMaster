@@ -7,7 +7,7 @@
     <h1 class="h3 page-heading invoice-details-heading mb-3">Add Product</h1>
 
     <div class="bg-white border rounded p-3">
-        <form method="POST" action="{{ route('products.store') }}">
+        <form method="POST" action="{{ route('products.store') }}" enctype="multipart/form-data">
             @csrf
 
             <div class="invoice-meta-grid invoice-meta-form">
@@ -88,6 +88,19 @@
                                class="form-control form-control-sm invoice-meta-input"
                                value="{{ old('sale_price', '0') }}" required>
                         @error('sale_price')<div class="text-danger small">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+
+                <div class="invoice-meta-row">
+                    <label class="invoice-meta-title" for="product_image">Product Icon</label>
+                    <div class="invoice-meta-field" style="grid-column: 2 / -1;">
+                        <input id="product_image" type="file" name="product_image"
+                               class="form-control form-control-sm invoice-meta-input"
+                               accept="image/png,image/jpeg,image/gif,image/webp">
+                        <div class="invoice-meta-sub text-muted">
+                            Optional icon/image for this product (JPG, PNG, GIF, WEBP — max 2MB). Shown on Cash POS.
+                        </div>
+                        @error('product_image')<div class="text-danger small">{{ $message }}</div>@enderror
                     </div>
                 </div>
             </div>

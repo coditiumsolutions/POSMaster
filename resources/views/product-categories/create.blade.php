@@ -7,7 +7,7 @@
     <h1 class="h3 page-heading invoice-details-heading mb-3">Add Category</h1>
 
     <div class="bg-white border rounded p-3">
-        <form method="POST" action="{{ route('product-categories.store') }}">
+        <form method="POST" action="{{ route('product-categories.store') }}" enctype="multipart/form-data">
             @csrf
 
             <div class="invoice-meta-grid invoice-meta-form">
@@ -41,6 +41,19 @@
                         <input type="hidden" name="is_active" value="0">
                         <input id="is_active" type="checkbox" name="is_active" value="1" class="form-check-input"
                                @checked(old('is_active', '1') == '1')>
+                    </div>
+                </div>
+
+                <div class="invoice-meta-row">
+                    <label class="invoice-meta-title" for="category_image">Category Image</label>
+                    <div class="invoice-meta-field" style="grid-column: 2 / -1;">
+                        <input id="category_image" type="file" name="category_image"
+                               class="form-control form-control-sm invoice-meta-input"
+                               accept="image/png,image/jpeg,image/gif,image/webp">
+                        <div class="invoice-meta-sub text-muted">
+                            Optional image for this category (JPG, PNG, GIF, WEBP — max 2MB). Shown on Cash POS.
+                        </div>
+                        @error('category_image')<div class="text-danger small">{{ $message }}</div>@enderror
                     </div>
                 </div>
             </div>

@@ -7,7 +7,7 @@
     <h1 class="h3 page-heading invoice-details-heading mb-3">Edit Product</h1>
 
     <div class="bg-white border rounded p-3">
-        <form method="POST" action="{{ route('products.update', $product->uid) }}">
+        <form method="POST" action="{{ route('products.update', $product->uid) }}" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
@@ -82,6 +82,33 @@
                                class="form-control form-control-sm invoice-meta-input"
                                value="{{ old('sale_price', $product->sale_price) }}" required>
                         @error('sale_price')<div class="text-danger small">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+
+                <div class="invoice-meta-row">
+                    <label class="invoice-meta-title" for="product_image">Product Icon</label>
+                    <div class="invoice-meta-field" style="grid-column: 2 / -1;">
+                        <input id="product_image" type="file" name="product_image"
+                               class="form-control form-control-sm invoice-meta-input"
+                               accept="image/png,image/jpeg,image/gif,image/webp">
+                        <div class="invoice-meta-sub text-muted">
+                            Upload an icon/image for this product (JPG, PNG, GIF, WEBP — max 2MB). Shown on Cash POS.
+                        </div>
+                        @error('product_image')<div class="text-danger small">{{ $message }}</div>@enderror
+                        @if(!empty($product->image_path))
+                            <div class="mt-2 d-flex align-items-center gap-3 flex-wrap">
+                                <img src="{{ asset($product->image_path) }}"
+                                     alt="{{ $product->image_name ?: $product->product_name }}"
+                                     style="max-height: 72px; max-width: 180px; object-fit: contain; border: 1px solid #e2e8f0; padding: 4px; background: #fff;">
+                                <div class="small text-muted">
+                                    {{ $product->image_name ?: basename($product->image_path) }}
+                                </div>
+                                <label class="small mb-0">
+                                    <input type="checkbox" name="remove_product_image" value="1">
+                                    Remove current icon
+                                </label>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

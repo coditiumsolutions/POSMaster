@@ -17,6 +17,10 @@ class ProductCategory extends Model
         'category_code',
         'category_name',
         'description',
+        'image_path',
+        'image_name',
         'is_active',
+        'created_date',
+        'updated_date',
     ];
 }

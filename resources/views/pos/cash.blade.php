@@ -2,49 +2,33 @@
 
 @section('title', $pageTitle ?? 'POS - Cash Sale')
 
-@section('content')
 @php
     $barcodeMode = !empty($enableBarcodeScan);
+@endphp
 
-    $itemIcon = function (?string $name): string {
-        $n = strtolower($name ?? '');
-        if (str_contains($n, 'milk') || str_contains($n, 'dairy') || str_contains($n, 'yogurt') || str_contains($n, 'yoghurt') || str_contains($n, 'cream')) return 'bi-cup-straw';
-        if (str_contains($n, 'butter') || str_contains($n, 'ghee') || str_contains($n, 'margarine')) return 'bi-droplet-fill';
-        if (str_contains($n, 'cheese') || str_contains($n, 'topping')) return 'bi-circle-half';
-        if (str_contains($n, 'bread') || str_contains($n, 'roti') || str_contains($n, 'bun') || str_contains($n, 'loaf') || str_contains($n, 'rusk')) return 'bi-basket2-fill';
-        if (str_contains($n, 'egg')) return 'bi-egg-fill';
-        if (str_contains($n, 'rice') || str_contains($n, 'flour') || str_contains($n, 'atta') || str_contains($n, 'grocery') || str_contains($n, 'pulse') || str_contains($n, 'dal')) return 'bi-bag-fill';
-        if (str_contains($n, 'oil') || str_contains($n, 'spice') || str_contains($n, 'salt') || str_contains($n, 'sugar') || str_contains($n, 'extra')) return 'bi-box-seam-fill';
-        if (str_contains($n, 'fruit') || str_contains($n, 'apple') || str_contains($n, 'banana') || str_contains($n, 'mango') || str_contains($n, 'orange')) return 'bi-apple';
-        if (str_contains($n, 'veg') || str_contains($n, 'salad') || str_contains($n, 'tomato') || str_contains($n, 'onion')) return 'bi-flower1';
-        if (str_contains($n, 'meat') || str_contains($n, 'mutton') || str_contains($n, 'beef') || str_contains($n, 'bbq') || str_contains($n, 'barbe')) return 'bi-fire';
-        if (str_contains($n, 'chicken') || str_contains($n, 'broast') || str_contains($n, 'crispy')) return 'bi-egg-fill';
-        if (str_contains($n, 'fish') || str_contains($n, 'seafood')) return 'bi-water';
-        if (str_contains($n, 'pizza') || str_contains($n, 'calzone')) return 'bi-pie-chart-fill';
-        if (str_contains($n, 'burger') || str_contains($n, 'sandwich')) return 'bi-layers-fill';
-        if (str_contains($n, 'fries') || str_contains($n, 'fry') || str_contains($n, 'chips')) return 'bi-grid-3x2-gap-fill';
-        if (str_contains($n, 'pasta') || str_contains($n, 'lasagna') || str_contains($n, 'noodle')) return 'bi-intersect';
-        if (str_contains($n, 'roll') || str_contains($n, 'wrap')) return 'bi-receipt';
-        if (str_contains($n, 'drink') || str_contains($n, 'juice') || str_contains($n, 'beverage') || str_contains($n, 'soda') || str_contains($n, 'water') || str_contains($n, 'tea') || str_contains($n, 'coffee')) return 'bi-cup-hot-fill';
-        if (str_contains($n, 'ice') || str_contains($n, 'dessert') || str_contains($n, 'sweet') || str_contains($n, 'cake')) return 'bi-snow2';
-        if (str_contains($n, 'bag')) return 'bi-bag-fill';
-        if (str_contains($n, 'deal') || str_contains($n, 'combo') || str_contains($n, 'offer')) return 'bi-tags-fill';
-        if (str_contains($n, 'deliver')) return 'bi-truck';
-        if (str_contains($n, 'dawn') || str_contains($n, 'brand')) return 'bi-buildings-fill';
-        return 'bi-box2-fill';
-    };
+@section('pos_top_categories')
+@unless($barcodeMode)
+<header class="pos-topbar-tertiary no-print">
+    <div class="pos-category-tiles" id="productCategories" role="group" aria-label="Product categories">
+        <button type="button"
+                class="btn btn-sm pos-category-btn active category-btn"
+                data-category="">
+            All Items
+        </button>
+        @foreach($categories as $category)
+        <button type="button"
+                class="btn btn-sm pos-category-btn category-btn"
+                data-category="{{ $category->uid }}">
+            {{ $category->category_name }}
+        </button>
+        @endforeach
+    </div>
+</header>
+@endunless
+@endsection
 
-    $iconTone = function (?string $name): string {
-        $tones = ['blue', 'orange', 'green', 'pink', 'teal', 'violet', 'amber', 'rose'];
-        $key = $name ?? '';
-        $hash = 0;
-        $len = strlen($key);
-        for ($i = 0; $i < $len; $i++) {
-            $hash = ($hash * 31 + ord($key[$i])) & 0x7fffffff;
-        }
-        return $tones[$hash % count($tones)];
-    };
-
+@section('content')
+@php
     $cardPrice = function ($price): string {
         $price = (float) $price;
         return fmod($price, 1.0) == 0.0
@@ -100,31 +84,8 @@
                                    placeholder="Search product by name, code, or barcode...">
                         </div>
 
-                        @php $catTone = 0; @endphp
-                        <div class="pos-category-tiles mb-2" id="productCategories" role="group" aria-label="Product categories">
-                            <button type="button"
-                                    class="btn btn-sm pos-category-btn pos-cat-tone-{{ $catTone++ % 12 }} active category-btn"
-                                    data-category="">
-                                <span class="pos-cat-accent" aria-hidden="true"></span>
-                                <span class="pos-cat-icon" aria-hidden="true"><i class="bi bi-grid-fill"></i></span>
-                                <span class="pos-cat-label">All Items</span>
-                            </button>
-                            @foreach($categories as $category)
-                            <button type="button"
-                                    class="btn btn-sm pos-category-btn pos-cat-tone-{{ $catTone++ % 12 }} category-btn"
-                                    data-category="{{ $category->uid }}">
-                                <span class="pos-cat-accent" aria-hidden="true"></span>
-                                <span class="pos-cat-icon" aria-hidden="true"><i class="bi {{ $itemIcon($category->category_name) }}"></i></span>
-                                <span class="pos-cat-label">{{ $category->category_name }}</span>
-                            </button>
-                            @endforeach
-                        </div>
-
                         <div class="pos-product-cards" id="productsGrid">
                             @foreach($products as $product)
-                                @php
-                                    $iconSource = trim(($product->product_name ?? '') . ' ' . (optional($product->category)->category_name ?? ''));
-                                @endphp
                                 <button type="button"
                                         class="pos-item-card product-item add-product"
                                         data-category="{{ $product->category_uid }}"
@@ -137,13 +98,15 @@
                                         data-discount="{{ $product->discount_percent }}"
                                         data-stock="{{ ($stockByProduct ?? [])[$product->uid] ?? 0 }}"
                                         title="{{ $product->product_code }}">
-                                    @if(!empty($product->image_path))
-                                        <img class="pos-item-card-photo" src="{{ $product->image_path }}" alt="">
-                                    @else
-                                        <span class="pos-icon-tile pos-icon-tile--lg pos-icon-tone-{{ $iconTone($iconSource) }}" aria-hidden="true">
-                                            <i class="bi {{ $itemIcon($iconSource) }}"></i>
-                                        </span>
-                                    @endif
+                                    <img class="pos-item-card-photo"
+                                         src="{{ \App\Support\ProductFoodImage::url(
+                                             $product->image_path,
+                                             $product->product_name,
+                                             optional($product->category)->category_name,
+                                             optional($product->category)->image_path
+                                         ) }}"
+                                         alt="{{ $product->product_name }}"
+                                         loading="lazy">
                                     <span class="pos-item-card-name">{{ $product->product_name }}</span>
                                     <span class="pos-item-card-price">{{ $cardPrice($product->sale_price) }}</span>
                                 </button>

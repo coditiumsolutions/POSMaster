@@ -9,7 +9,10 @@ use App\Models\ProductCategory;
 use App\Models\ProductUnit;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ProductsController extends Controller
@@ -84,6 +87,7 @@ class ProductsController extends Controller
             'is_taxable' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
             'description' => 'nullable|string|max:500',
+            'product_image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
         ], [
             'branch_uid.required' => 'Branch is required. Each product belongs to one branch.',
             'product_code.unique' => 'This product code already exists for the selected branch.',
@@ -92,7 +96,12 @@ class ProductsController extends Controller
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['is_taxable'] = $request->boolean('is_taxable');
         $validated['created_date'] = now();
+        unset($validated['product_image']);
         $product = Product::create($validated);
+
+        if ($request->hasFile('product_image')) {
+            $this->storeProductImage($product, $request->file('product_image'));
+        }
 
         // One inventory record for this product + branch (starting at 0).
         Inventory::firstOrCreate(
@@ -154,6 +163,8 @@ class ProductsController extends Controller
             'is_taxable' => 'nullable|boolean',
             'is_active' => 'nullable|boolean',
             'description' => 'nullable|string|max:500',
+            'product_image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:2048',
+            'remove_product_image' => 'nullable|boolean',
         ], [
             'branch_uid.required' => 'Branch is required. Each product belongs to one branch.',
             'product_code.unique' => 'This product code already exists for the selected branch.',
@@ -162,7 +173,19 @@ class ProductsController extends Controller
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['is_taxable'] = $request->boolean('is_taxable');
         $validated['updated_date'] = now();
+        unset($validated['product_image'], $validated['remove_product_image']);
+
+        if ($request->boolean('remove_product_image') && !empty($product->image_path)) {
+            $this->deleteProductImageFile($product->image_path);
+            $validated['image_path'] = null;
+            $validated['image_name'] = null;
+        }
+
         $product->update($validated);
+
+        if ($request->hasFile('product_image')) {
+            $this->storeProductImage($product, $request->file('product_image'));
+        }
 
         Inventory::firstOrCreate(
             [
@@ -219,7 +242,9 @@ class ProductsController extends Controller
                 DB::table('inventory_transactions')->where('product_uid', $uid)->delete();
                 Inventory::where('product_uid', $uid)->delete();
                 DB::table('customer_monthly_supply_overrides')->where('product_uid', $uid)->delete();
+                $imagePath = $product->image_path;
                 $product->delete();
+                $this->deleteProductImageFile($imagePath);
             });
         } catch (QueryException $e) {
             return back()->with(
@@ -229,5 +254,54 @@ class ProductsController extends Controller
         }
 
         return back()->with('success', "Product \"{$label}\" deleted successfully!");
+    }
+
+    private function storeProductImage(Product $product, UploadedFile $file): void
+    {
+        $dir = public_path('uploads/products');
+        if (!File::isDirectory($dir)) {
+            File::makeDirectory($dir, 0755, true);
+        }
+
+        if (!empty($product->image_path)) {
+            $this->deleteProductImageFile($product->image_path);
+        }
+
+        $originalName = $file->getClientOriginalName();
+        $ext = strtolower($file->getClientOriginalExtension() ?: 'png');
+        $storedName = 'product-' . $product->uid . '-' . Str::lower(Str::random(8)) . '.' . $ext;
+        $file->move($dir, $storedName);
+
+        $product->update([
+            'image_path' => 'uploads/products/' . $storedName,
+            'image_name' => $originalName,
+            'updated_date' => now(),
+        ]);
+
+        $publicHtmlDir = base_path('public_html/uploads/products');
+        if (File::isDirectory(base_path('public_html'))) {
+            if (!File::isDirectory($publicHtmlDir)) {
+                File::makeDirectory($publicHtmlDir, 0755, true);
+            }
+            $src = $dir . DIRECTORY_SEPARATOR . $storedName;
+            if (is_file($src)) {
+                @copy($src, $publicHtmlDir . DIRECTORY_SEPARATOR . $storedName);
+            }
+        }
+    }
+
+    private function deleteProductImageFile(?string $relativePath): void
+    {
+        $relativePath = trim((string) $relativePath);
+        if ($relativePath === '' || preg_match('#^https?://#i', $relativePath)) {
+            return;
+        }
+
+        $relativePath = ltrim(str_replace('\\', '/', $relativePath), '/');
+        foreach ([public_path($relativePath), base_path('public_html/' . $relativePath)] as $full) {
+            if (is_file($full)) {
+                @unlink($full);
+            }
+        }
     }
 }

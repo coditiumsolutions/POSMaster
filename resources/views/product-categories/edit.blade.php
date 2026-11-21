@@ -7,7 +7,7 @@
     <h1 class="h3 page-heading invoice-details-heading mb-3">Edit Category</h1>
 
     <div class="bg-white border rounded p-3">
-        <form method="POST" action="{{ route('product-categories.update', $category->uid) }}">
+        <form method="POST" action="{{ route('product-categories.update', $category->uid) }}" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
@@ -42,6 +42,33 @@
                         <input type="hidden" name="is_active" value="0">
                         <input id="is_active" type="checkbox" name="is_active" value="1" class="form-check-input"
                                @checked(old('is_active', $category->is_active) == true || old('is_active') === '1')>
+                    </div>
+                </div>
+
+                <div class="invoice-meta-row">
+                    <label class="invoice-meta-title" for="category_image">Category Image</label>
+                    <div class="invoice-meta-field" style="grid-column: 2 / -1;">
+                        <input id="category_image" type="file" name="category_image"
+                               class="form-control form-control-sm invoice-meta-input"
+                               accept="image/png,image/jpeg,image/gif,image/webp">
+                        <div class="invoice-meta-sub text-muted">
+                            Upload an image for this category (JPG, PNG, GIF, WEBP — max 2MB). Shown on Cash POS.
+                        </div>
+                        @error('category_image')<div class="text-danger small">{{ $message }}</div>@enderror
+                        @if(!empty($category->image_path))
+                            <div class="mt-2 d-flex align-items-center gap-3 flex-wrap">
+                                <img src="{{ asset($category->image_path) }}"
+                                     alt="{{ $category->image_name ?: $category->category_name }}"
+                                     style="max-height: 72px; max-width: 180px; object-fit: contain; border: 1px solid #e2e8f0; padding: 4px; background: #fff;">
+                                <div class="small text-muted">
+                                    {{ $category->image_name ?: basename($category->image_path) }}
+                                </div>
+                                <label class="small mb-0">
+                                    <input type="checkbox" name="remove_category_image" value="1">
+                                    Remove current image
+                                </label>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

@@ -83,6 +83,7 @@
             </nav>
             <div class="pos-topbar-bg-brand" aria-hidden="true">Developed By: Coditium Solutions (+92 333-5191392)</div>
         </header>
+        @yield('pos_top_categories')
         <div class="pos-gold-bar" aria-hidden="true"></div>
     </div>
 

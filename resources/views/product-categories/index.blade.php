@@ -38,6 +38,7 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
+                            <th>Image</th>
                             <th>Code</th>
                             <th>Name</th>
                             <th>Description</th>
@@ -48,6 +49,15 @@
                     <tbody>
                         @forelse($categories as $category)
                         <tr>
+                            <td>
+                                @if(!empty($category->image_path))
+                                    <img src="{{ asset($category->image_path) }}"
+                                         alt="{{ $category->category_name }}"
+                                         style="width: 40px; height: 40px; object-fit: cover; border: 1px solid #e2e8f0;">
+                                @else
+                                    <span class="text-muted">—</span>
+                                @endif
+                            </td>
                             <td>{{ $category->category_code }}</td>
                             <td>{{ $category->category_name }}</td>
                             <td>{{ $category->description ?: '—' }}</td>
@@ -70,7 +80,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="5" class="text-center py-4 text-muted">No categories found</td>
+                            <td colspan="6" class="text-center py-4 text-muted">No categories found</td>
                         </tr>
                         @endforelse
                     </tbody>
